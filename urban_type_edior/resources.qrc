@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/plugins/urban_type_edior" >
+        <file>icon.png</file>
+    </qresource>
+</RCC>
