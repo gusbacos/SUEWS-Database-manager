@@ -209,20 +209,22 @@ class Urban_type_creator:
             Rs = eval('self.dlg.comboBoxNew' + str(i))
             Rs.clear()
             vars()['self.dlg.comboBoxNew' + str(i)] = Rs
-
+        self.dlg.comboBoxField.clear()
+        self.dlg.comboBoxField.setCurrentIndex(-1)
+        self.dlg.comboBoxField.setDisabled(True)
         self.dlg.comboBoxRegion.clear()
         self.dlg.textEdit.clear()
         
-        self.layerComboManagerPoint = QgsMapLayerComboBox(self.dlg.comboBoxVector)
-        # self.layerComboManagerPoint.setCurrentIndex(-1)
-        # self.layerComboManagerPoint.setFilters(QgsMapLayerProxyModel.PolygonLayer)
-        # # self.layerComboManagerPoint.setFixedWidth(300)
+        self.layerComboManagerPoint = self.dlg.comboBoxVector
+        self.layerComboManagerPoint.setCurrentIndex(-1)
+        self.layerComboManagerPoint.setFilters(QgsMapLayerProxyModel.PolygonLayer)
+        #self.layerComboManagerPoint.setFixedWidth(250)
 
-        self.layerComboManagerPointField = QgsFieldComboBox(self.dlg.comboBoxField)
+        self.layerComboManagerPointField = self.dlg.comboBoxField
         self.layerComboManagerPointField.setFilters(QgsFieldProxyModel.AllTypes)
-        # self.layerComboManagerPointField.setFixedWidth(300)
+        # self.layerComboManagerPointField.setFixedWidth(250)
         self.layerComboManagerPoint.layerChanged.connect(self.layerComboManagerPointField.setLayer)
-
+        self.layerComboManagerPointField.setEnabled(True)
         # tf().timezone_at(lng=x, lat=y)
 
         # x = vectorlayer.to_crs("EPSG:4326").loc[0:0].representative_point().x.item()
@@ -232,7 +234,7 @@ class Urban_type_creator:
 
         # Read Database 
  #       db = pd.read_csv(r'C:\Script\NGEO306\GHSL\UrbanTypes.txt', sep= '\t')
-        db_path =r'C:\Script\NGEO306\database_test2.xlsx'
+        db_path =r'C:\Script\NGEO306\database_copy.xlsx'
         db = pd.read_excel(db_path, sheet_name= 'Lod1_Types', index_col=  'ID')
 
 
@@ -350,7 +352,7 @@ class Urban_type_creator:
                 self.dlg.comboBoxType.setEnabled(True)
 
             except:
-                print("")
+                pass
                 # layer = self.layerComboManagerPoint.currentLayer()
                 # # get index of the field
                 # i = layer.fields().indexOf(field)
@@ -401,22 +403,25 @@ class Urban_type_creator:
 
     # Info Button
     def typeInfo(self): 
-            db_path =r'C:\Script\NGEO306\database_test2.xlsx'
+            db_path =r'C:\Script\NGEO306\database_copy.xlsx'
 
             # db = pd.read_csv(r'C:\Script\NGEO306\GHSL\UrbanTypes.txt', sep= '\t')
             db = pd.read_excel(db_path, sheet_name= 'Lod1_Types', index_col=  'ID')
+            try:
+                reg = self.dlg.comboBoxRegion.currentText()
+                urb_type = self.dlg.comboBoxType.currentText() 
+                # selection = db[db['Region'] == reg][db['Type']== urb_type]
+                selection = db.loc[(db['Region'] == reg) & (db['Type'] == urb_type)]
 
-            reg = self.dlg.comboBoxRegion.currentText()
-            urb_type = self.dlg.comboBoxType.currentText() 
-            selection = db[db['Region'] == reg][db['Type']== urb_type]
-
-            self.dlg.textEdit.setText(
-                'Urban Type Info: '+ urb_type +
-                '\n\nRegion: ' +  reg +
-                '\n\nPeriod: ' + str(selection['Period'].item()) + 
-                '\n\nDescription: ' + str(selection['Description'].item()) +
-                '\n\nAuthor: ' + str(selection['Author'].item())
-                )
+                self.dlg.textEdit.setText(
+                    'Urban Type Info: '+ urb_type +
+                    '\n\nRegion: ' +  reg +
+                    '\n\nPeriod: ' + str(selection['Period'].item()) + 
+                    '\n\nDescription: ' + str(selection['Description'].item()) +
+                    '\n\nAuthor: ' + str(selection['Author'].item())
+                    )
+            except:
+                pass
 
     def savefile(self):
         self.outputfile = self.fileDialog.getSaveFileName(None, "Save File As:", None, "Shapefiles (*.shp)")
@@ -483,10 +488,14 @@ class Urban_type_creator:
 
 
     def resetPlugin(self):
+        self.layerComboManagerPointField.clear()
+        self.layerComboManagerPoint.clear()
         self.dlg.comboBoxRegion.clear()
         self.dlg.comboBoxVector.clear()
         self.dlg.comboBoxField.clear()
+        self.dlg.comboBoxField.setCurrentIndex(-1)
         self.dlg.textEdit.clear()
+        self.dlg.textOutput.clear()
 
         for i in range(1,14):
             Ls = eval('self.dlg.comboBoxClass' + str(i))

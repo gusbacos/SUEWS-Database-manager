@@ -151,7 +151,7 @@ p, li { white-space: pre-wrap; }
          </widget>
         </item>
         <item row="1" column="1">
-         <widget class="QTextBrowser" name="textBrowser">
+         <widget class="QTextBrowser" name="textBrowserEvFrom">
           <property name="enabled">
            <bool>true</bool>
           </property>
@@ -161,10 +161,16 @@ p, li { white-space: pre-wrap; }
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>30</height>
+           </size>
+          </property>
           <property name="maximumSize">
            <size>
             <width>139</width>
-            <height>24</height>
+            <height>30</height>
            </size>
           </property>
          </widget>
@@ -743,6 +749,16 @@ p, li { white-space: pre-wrap; }
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
+       <widget class="QPushButton" name="compButton">
+        <property name="toolTip">
+         <string>Check If Type is Compatible with SUEWS-Database</string>
+        </property>
+        <property name="text">
+         <string>Check Compatibility</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="genButton">
         <property name="enabled">
          <bool>false</bool>
@@ -758,16 +774,6 @@ p, li { white-space: pre-wrap; }
         </property>
         <property name="text">
          <string>Generate Type</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="compButton">
-        <property name="toolTip">
-         <string>Check If Type is Compatible with SUEWS-Database</string>
-        </property>
-        <property name="text">
-         <string>Check Compatibility</string>
         </property>
        </widget>
       </item>
@@ -788,7 +794,7 @@ p, li { white-space: pre-wrap; }
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton_3">
+       <widget class="QPushButton" name="pushButtonClose">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
           <horstretch>0</horstretch>
@@ -843,6 +849,22 @@ p, li { white-space: pre-wrap; }
     <hint type="destinationlabel">
      <x>309</x>
      <y>65</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButtonClose</sender>
+   <signal>clicked()</signal>
+   <receiver>urban_type_editorDialogBase</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>914</x>
+     <y>660</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>550</x>
+     <y>340</y>
     </hint>
    </hints>
   </connection>

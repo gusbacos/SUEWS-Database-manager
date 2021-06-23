@@ -211,7 +211,9 @@ class urban_type_db_editor:
 
         Type = pd.read_excel(db_path, sheet_name= 'Lod1_Types', index_col=  idx_col)
         veg = pd.read_excel(db_path, sheet_name= 'Lod2_Veg', index_col = idx_col)
+        veg.name = 'Lod2_Veg'
         nonveg = pd.read_excel(db_path, sheet_name= 'Lod2_NonVeg', index_col = idx_col)
+        nonveg.name = 'Lod2_NonVeg'
         ref = pd.read_excel(db_path, sheet_name= 'References', index_col= idx_col)
         alb =  pd.read_excel(db_path, sheet_name= 'Lod3_Albedo', index_col= idx_col)
         alb.name = 'Lod3_Albedo'
@@ -239,7 +241,13 @@ class urban_type_db_editor:
             'Water Storage': 'Lod3_Storage',
             'Conductance': 'Lod3_Conductance',
             'Leaf Growth Power': 'Lod3_LGP',
-            'Drainage': 'Lod3_Drainage'}
+            'Drainage': 'Lod3_Drainage',
+            'Vegetation' : 'Lod2_Veg',
+            'Building' : 'Lod2_NonVeg',
+            'Paved' : 'Lod2_NonVeg',
+            'Bare Soil': 'Lod2_NonVeg',
+            #'Water' : 'Lod2_Water',
+        }
 
         table_dict_ID = {
             'Emissivity': 'Em',
@@ -249,7 +257,11 @@ class urban_type_db_editor:
             'Water Storage': 'St',
             'Conductance': 'Cnd',
             'Leaf Growth Power': 'LGP',
-            'Drainage': 'Dr'}
+            'Drainage': 'Dr',
+            'Vegetation' : 'Veg',
+            'Building' : 'NonVeg',
+            'Paved' : 'NonVeg',
+            'Bare Soil': 'NonVeg',}
 
         table_dict_pd = {
             'Emissivity': em,
@@ -259,7 +271,11 @@ class urban_type_db_editor:
             'Water Storage': st,
             'Conductance': cnd,
             'Leaf Growth Power': LGP,
-            'Drainage': dr
+            'Drainage': dr,
+            'Vegetation' : veg,
+            'Building' : nonveg,
+            'Paved' : nonveg,
+            'Bare Soil': nonveg,
             }
         
         dict_gen_type = {
@@ -283,16 +299,17 @@ class urban_type_db_editor:
         for i in range(len(ref)):
             ref_list.append(str(ref['Author'].iloc[i]) + ' (' + str(ref['Publication Year'].iloc[i]) + ')')
         ref['authoryear'] = ref_list
-        self.dlg.comboBoxRef.addItems(ref_list) 
+        self.dlg.comboBoxRef.addItems(sorted(ref_list)) 
         self.dlg.comboBoxRef.setCurrentIndex(-1)
 
         
         def table_changed():
-            #get current layer
-            table = table_dict_pd[str(self.dlg.comboBoxTableSelect.currentText())]
-            col_list = list(table)[2:-1]
-            len_list = len(col_list)
 
+            table_name = self.dlg.comboBoxTableSelect.currentText()
+            
+            # Clear ComboBoxes
+            self.dlg.textBrowserNewID.clear()
+            self.dlg.textBrowserDf.clear()
             for i in range(2,15):
                 # Oc == Old Class
                 Oc = eval('self.dlg.textBrowser_' + str(i))
@@ -305,40 +322,56 @@ class urban_type_db_editor:
                 Nc.setDisabled(True)
                 vars()['self.dlg.textEdit_Edit_' + str(i)] = Nc
 
-            idx = 2
-            for i in range(len_list):
-                if idx > 13:
-                    break 
-                # Left side
-                Oc = eval('self.dlg.textBrowser_' + str(idx))
-                Oc.setEnabled(True)
-                Oc.setText(str(col_list[i]))
-                vars()['self.dlg.textBrowser_' + str(idx)] = Oc
+            try:
+                table = table_dict_pd[str(table_name)]
+                if ((table_name == 'Vegetation') or (table_name == 'Paved') or (table_name == 'Building') == (table_name != 'Bare Soil')):
+                    col_list = list(table)[1:-1]
+                else:
+                    col_list = list(table)[2:-1]
+                len_list = len(col_list)
 
-                Nc = eval('self.dlg.textEdit_Edit_' + str(idx))
-                Nc.setEnabled(True)
-                vars()['self.dlg.textEdit_Edit_' + str(idx)] = Nc
-                idx = idx+1
+                idx = 2
+                for i in range(len_list):
+                    if idx > 13:
+                        break 
+                    # Left side
+                    Oc = eval('self.dlg.textBrowser_' + str(idx))
+                    Oc.setEnabled(True)
+                    Oc.setText(str(col_list[i]))
+                    vars()['self.dlg.textBrowser_' + str(idx)] = Oc
 
-            self.dlg.textBrowserNewID.setText(table_dict_ID[str(self.dlg.comboBoxTableSelect.currentText())] + str(len(table) + 1))
-            #self.dlg.textBrowserNewID.setText(str(" ".join(re.findall("[a-zA-Z]+", table.index[1])))+ str(len(table)+1))
-            self.dlg.textBrowserDf.setText(str(table.drop(columns ='General Type').reset_index().to_html(index=False)))
-           
-            self.dlg.comboBoxSurface.setCurrentIndex(-1)
+                    Nc = eval('self.dlg.textEdit_Edit_' + str(idx))
+                    Nc.setEnabled(True)
+                    vars()['self.dlg.textEdit_Edit_' + str(idx)] = Nc
+                    idx = idx+1
+
+                self.dlg.textBrowserNewID.setText(table_dict_ID[str(self.dlg.comboBoxTableSelect.currentText())] + str(len(table) + 1))
+                #self.dlg.textBrowserNewID.setText(str(" ".join(re.findall("[a-zA-Z]+", table.index[1])))+ str(len(table)+1))
+                if ((table_name == 'Vegetation') or (table_name == 'Paved') or (table_name == 'Building') == (table_name != 'Bare Soil')):
+                    self.dlg.textBrowserDf.setText(str(table.reset_index().to_html(index=False)))
+                else:
+                    self.dlg.textBrowserDf.setText(str(table.drop(columns ='General Type').reset_index().to_html(index=False)))        
+                self.dlg.comboBoxSurface.setCurrentIndex(-1)
+            except:
+                print(' ')
 
         self.dlg.comboBoxTableSelect.currentIndexChanged.connect(table_changed) 
 
         def ref_changed():
-            ID = ref[ref['authoryear'] ==  self.dlg.comboBoxRef.currentText()].index.item()
-            self.dlg.textBrowserRef.setText(
-                '<b>Author: ' +'</b>' + str(ref.loc[ID, 'Author']) + '<br><b>' +
-                'Year: ' + '</b> '+ str(ref.loc[ID, 'Publication Year']) + '<br><b>' +
-                'Title: ' + '</b> ' +  str(ref.loc[ID, 'Title']) + '<br><b>' +
-                'Journal: ' + '</b>' + str(ref.loc[ID, 'Journal']) + '<br><b>' +
-                'Ref ID: ' + '</b>' + str(ID)
-            )
-    
+            self.dlg.textBrowserRef.clear()
 
+            try:
+                ID = ref[ref['authoryear'] ==  self.dlg.comboBoxRef.currentText()].index.item()
+                self.dlg.textBrowserRef.setText(
+                    '<b>Author: ' +'</b>' + str(ref.loc[ID, 'Author']) + '<br><b>' +
+                    'Year: ' + '</b> '+ str(ref.loc[ID, 'Publication Year']) + '<br><b>' +
+                    'Title: ' + '</b> ' +  str(ref.loc[ID, 'Title']) + '<br><b>' +
+                    'Journal: ' + '</b>' + str(ref.loc[ID, 'Journal']) + '<br><b>' +
+                    'Ref ID: ' + '</b>' + str(ID)
+                )
+            except:
+                pass
+    
         self.dlg.comboBoxRef.currentIndexChanged.connect(ref_changed) 
 
         def push_to_database():
@@ -440,8 +473,10 @@ class urban_type_db_editor:
                 LGP.to_excel(writer, sheet_name='Lod3_LGP')
                 dr.to_excel(writer, sheet_name='Lod3_Drainage')
 
-        self.dlg.pushButtonGen.clicked.connect(push_to_database)
+                QMessageBox.information(None, "Sucessful",'Edit Successfully pushed to Database')
 
+        self.dlg.pushButtonGen.clicked.connect(push_to_database)
+        
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
