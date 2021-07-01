@@ -366,7 +366,7 @@ class urban_type_editor:
         
         self.dlg.compButton.clicked.connect(check_type)
 
-        def generate_type():
+        def generate_type(self):
 
             db_path = r'C:\Script\NGEO306\database_copy.xlsx'
 

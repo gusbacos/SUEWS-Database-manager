@@ -773,7 +773,7 @@
    <sender>closeButton</sender>
    <signal>clicked()</signal>
    <receiver>Urban_type_creatorDialogBase</receiver>
-   <slot>reject()</slot>
+   <slot>close()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>426</x>

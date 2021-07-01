@@ -35,6 +35,7 @@ import webbrowser
 import pandas as pd
 from timezonefinder import TimezoneFinder as tf
 import urllib
+import time
 
 
 # Import the code for the dialog
@@ -42,10 +43,11 @@ from .Urban_type_creator_dialog import Urban_type_creatorDialog
 import os.path
 
 
-class Urban_type_creator:
+class Urban_type_creator(object):
     """QGIS Plugin Implementation."""
 
     def __init__(self, iface):
+        print('__init__')
         """Constructor.
 
         :param iface: An interface instance that will be passed to this class
@@ -73,12 +75,16 @@ class Urban_type_creator:
         self.actions = []
         self.menu = self.tr(u'&Urban_type_creator')
 
+        self.dlg = Urban_type_creatorDialog()
         # Check if plugin was started the first time in current QGIS session
         # Must be set in initGui() to survive plugin reloads
         self.first_start = None
 
         # Declare Variables
         self.outputfile = None
+
+       
+
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -171,6 +177,7 @@ class Urban_type_creator:
         return action
 
     def initGui(self):
+        print('init_GUI')
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
         icon_path = ':/plugins/Urban_type_creator/icon.png'
@@ -181,7 +188,7 @@ class Urban_type_creator:
             parent=self.iface.mainWindow())
 
         # will be set False in run()
-        self.first_start = True
+        self.first_start = False
 
 
     def unload(self):
@@ -194,6 +201,7 @@ class Urban_type_creator:
 
 
     def run(self):
+        print('run')
         """Run method that performs all the real work"""
 
         # Create the dialog with elements (after translation) and keep reference
@@ -203,19 +211,13 @@ class Urban_type_creator:
             self.dlg = Urban_type_creatorDialog()
 
        # Use or not ? 
-        for i in range(1,14):
-            Ls = eval('self.dlg.comboBoxClass' + str(i))
-            Ls.clear()
-            vars()['self.dlg.comboBoxClass' + str(i)] = Ls
-
-            Rs = eval('self.dlg.comboBoxNew' + str(i))
-            Rs.clear()
-            vars()['self.dlg.comboBoxNew' + str(i)] = Rs
+        
         self.dlg.comboBoxField.clear()
         self.dlg.comboBoxField.setCurrentIndex(-1)
         self.dlg.comboBoxField.setDisabled(True)
         self.dlg.comboBoxType.clear()
         self.dlg.textBrowser.clear()
+        self.dlg.textOutput.clear()
         self.dlg.Qlabel.clear()
         
         self.layerComboManagerPoint = self.dlg.comboBoxVector
@@ -232,8 +234,20 @@ class Urban_type_creator:
 
         # x = vectorlayer.to_crs("EPSG:4326").loc[0:0].representative_point().x.item()
         # y = vectorlayer.to_crs("EPSG:4326").loc[0:0].representative_point().y.item()
-
         
+        # Set up for the Help button
+        self.dlg.helpButton_2.clicked.connect(self.typeInfo)
+
+        # Set up for the run button
+        self.dlg.runButton.clicked.connect(self.start_progress)
+
+        self.dlg.comboBoxField.fieldChanged.connect(self.field_changed) 
+
+         # Set up of file save dialog
+        self.fileDialog = QFileDialog()
+        self.dlg.pushButtonSave.clicked.connect(self.savefile)
+
+
 
         # Read Database 
  #       db = pd.read_csv(r'C:\Script\NGEO306\GHSL\UrbanTypes.txt', sep= '\t')
@@ -248,6 +262,17 @@ class Urban_type_creator:
         self.dlg.comboBoxType.addItems(sorted(type_list)) 
         self.dlg.comboBoxType.setCurrentIndex(-1)
 
+        for i in range(1,14):
+            Ls = eval('self.dlg.comboBoxClass' + str(i))
+            Ls.clear()
+            vars()['self.dlg.comboBoxClass' + str(i)] = Ls
+
+            Rs = eval('self.dlg.comboBoxNew' + str(i))
+            Rs.clear()
+            Rs.addItems(sorted(type_list))
+            Rs.setCurrentIndex(-1)
+            vars()['self.dlg.comboBoxNew' + str(i)] = Rs
+
 
         
 
@@ -260,144 +285,7 @@ class Urban_type_creator:
 
         # '<img src='+r'C:\Script\NGEO306\urban_type_creator\image.JPG' + ' width="500" height=Auto>' 
 
-        def field_changed(field):
-            #get current layer
-            layer = self.layerComboManagerPoint.currentLayer()
-            # get index of the field
-            i = layer.fields().indexOf(field)
-            # get unique values
-            unique_values = layer.uniqueValues(i)    
-            #remove all values from comboBoxAttribute
-
-            len_uv = len(unique_values)
-
-            # Set set to string. ComboBox does not accept other than string ATM
-            # Have not yet found a way to fix this. 
-            # this loop will do the trick as workaround
-
-            if isinstance(unique_values, str):
-                att_list = unique_values
-            else:
-                att_list = []
-                for i in unique_values:
-                    att_list.append(str(i))
-
-            for i in range(1,14):
-                # Oc == Old Class
-                Oc = eval('self.dlg.comboBoxClass' + str(i))
-                Oc.clear()
-                Oc.setDisabled(True)
-                vars()['self.dlg.comboBoxClass' + str(i)] = Oc
-
-                Nc = eval('self.dlg.comboBoxNew' + str(i))
-                Nc.clear()
-                Nc.setDisabled(True)
-                vars()['self.dlg.comboBoxNew' + str(i)] = Nc
-
-                # Te = eval('self.dlg.editClassButton_' + str(i))
-                # Te.setDisabled(True)
-                # vars()['self.dlg.editClassButton_' + str(i)] = Te
-
-            idx = 1
-            for i in range(len_uv):
-                if idx > 13:
-                    break 
-                # Left side
-                Oc = eval('self.dlg.comboBoxClass' + str(idx))
-                #Oc.setEnabled(True)
-                Oc.addItems(att_list)
-                Oc.setCurrentIndex(i)
-                vars()['self.dlg.comboBoxClass' + str(idx)] = Oc
-
-                Nc = eval('self.dlg.comboBoxNew' + str(idx))
-                Nc.setEnabled(True)
-                vars()['self.dlg.comboBoxNew' + str(idx)] = Nc
-
-                # Te = eval('self.dlg.editClassButton_' + str(idx))
-                # Te.setEnabled(True)
-                # vars()['self.dlg.editClassButton_' + str(idx)] = Te
-
-                
-                idx += 1    
-
-        self.layerComboManagerPointField.fieldChanged.connect(field_changed) 
-
-        # def region_changed(field):
-
-        #     # db = pd.read_csv(r'C:\Script\NGEO306\GHSL\UrbanTypes.txt', sep= '\t')
-
-        #     att_field =  self.layerComboManagerPointField.currentText()
-
-        #     vlayer = self.layerComboManagerPoint.currentLayer()
-
-        # # Read Vectorlayer Path
-        #     try:
-        #         gdf = gpd.read_file(str(vlayer.dataProvider().dataSourceUri()))
-
-        #         len_uv = len(set(gdf[att_field]))
-
-                
-        #         # for i in range(1,14):
-
-        #         #     Nc = eval('self.dlg.comboBoxNew' + str(i))
-        #         #     Nc.setDisabled(True)
-        #         #     Nc.clear()
-        #         #     vars()['self.dlg.comboBoxNew' + str(i)] = Nc
-
-        #         idx = 1
-        #         for i in range(len_uv):
-        #             if idx > 13:
-        #                 break            
-
-        #             Nc = eval('self.dlg.comboBoxNew' + str(idx))
-        #             Nc.clear()
-        #             Nc.addItems(db['Type'][db['Region'] == reg])
-        #             Nc.setCurrentIndex(-1)
-        #             vars()['self.dlg.comboBoxNew' + str(idx)] = Nc
-
-        #             idx += 1 
-
-        #         # self.dlg.comboBoxType.clear()
-        #         # self.dlg.comboBoxType.addItems(db['Type'][db['Region'] == reg])
-        #         # self.dlg.comboBoxType.setCurrentIndex(-1)
-        #         # self.dlg.comboBoxType.setEnabled(True)
-
-        #     except:
-        #         pass
-                # layer = self.layerComboManagerPoint.currentLayer()
-                # # get index of the field
-                # i = layer.fields().indexOf(field)
-                # # get unique values
-                # unique_values = layer.uniqueValues(i)    
-
-                # # remove all values from comboBoxAttribute
-
-        # Urban Type Editor
-        def UTE(self):
-            print('UTE')
-        #     print('hes')
-        #     sg = urban_type_editor(self.iface)
-        #     self.dlg.setEnabled(False)
-        #     sg.run()
-        #     self.dlg.setEnabled(True)
-
-
-        # Set up of file save dialog
-        self.fileDialog = QFileDialog()
-        self.dlg.pushButtonSave.clicked.connect(self.savefile)
-
-        # Set up for the Help button
-        #self.dlg.helpButton.clicked.connect(self.help)
-        self.dlg.helpButton.clicked.connect(UTE)
-
-        
-        # Set up for the Help button
-        self.dlg.helpButton_2.clicked.connect(self.typeInfo)
-
-        # Set up for the run button
-        self.dlg.runButton.clicked.connect(self.start_progress)
-
-        # Show the dialog
+       # Show the dialog
         self.dlg.show()
 
         #run the dialog event loop
@@ -405,13 +293,76 @@ class Urban_type_creator:
 
         # See if OK was pressed
         if result:
+            print('result')
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
             pass
+        else:
+            self.dlg.__init__()
+
+
+
+    def field_changed(self, field):
+        #get current layer
+        layer = self.layerComboManagerPoint.currentLayer()
+        # get index of the field
+        i = layer.fields().indexOf(field)
+        # get unique values
+        unique_values = layer.uniqueValues(i)    
+        #remove all values from comboBoxAttribute
+
+        len_uv = len(unique_values)
+
+        # Set set to string. ComboBox does not accept other than string ATM
+        # Have not yet found a way to fix this. 
+        # this loop will do the trick as workaround
+
+        if isinstance(unique_values, str):
+            att_list = unique_values
+        else:
+            att_list = []
+            for i in unique_values:
+                att_list.append(str(i))
+
+        for i in range(1,14):
+            # Oc == Old Class
+            Oc = eval('self.dlg.comboBoxClass' + str(i))
+            Oc.clear()
+            Oc.setDisabled(True)
+            vars()['self.dlg.comboBoxClass' + str(i)] = Oc
+
+            Nc = eval('self.dlg.comboBoxNew' + str(i))
+            # Nc.clear()
+            Nc.setDisabled(True)
+            vars()['self.dlg.comboBoxNew' + str(i)] = Nc
+
+            # Te = eval('self.dlg.editClassButton_' + str(i))
+            # Te.setDisabled(True)
+            # vars()['self.dlg.editClassButton_' + str(i)] = Te
+
+        idx = 1
+        for i in range(len_uv):
+            if idx > 13:
+                break 
+            # Left side
+            Oc = eval('self.dlg.comboBoxClass' + str(idx))
+            #Oc.setEnabled(True)
+            Oc.addItems(att_list)
+            Oc.setCurrentIndex(i)
+            vars()['self.dlg.comboBoxClass' + str(idx)] = Oc
+
+            Nc = eval('self.dlg.comboBoxNew' + str(idx))
+            Nc.setEnabled(True)
+            vars()['self.dlg.comboBoxNew' + str(idx)] = Nc
+
+
+            idx += 1    
 
     # Info Button
     def typeInfo(self): 
+       
             self.dlg.Qlabel.clear()
+            # self.dlg.Qlabel.clear()
             db_path =r'C:\Script\NGEO306\database_copy.xlsx'
 
             # db = pd.read_csv(r'C:\Script\NGEO306\GHSL\UrbanTypes.txt', sep= '\t')
@@ -422,10 +373,11 @@ class Urban_type_creator:
                 type_list.append(str(db['Type'].iloc[i]) + ', ' + str(db['Location'].iloc[i]))
             db['type_location'] = type_list
 
-            try:
-                urb_type = self.dlg.comboBoxType.currentText() 
-                selection = db.loc[db['type_location'] == urb_type]
-
+            
+            urb_type = self.dlg.comboBoxType.currentText() 
+            selection = db.loc[db['type_location'] == urb_type]
+            
+            if len(urb_type)>0:
                 self.dlg.textBrowser.setText(
                     'Urban Type Info: '+ selection['Type'].item() +
                     '\n\nLocation: ' +  selection['Location'].item() +
@@ -433,18 +385,19 @@ class Urban_type_creator:
                     '\n\nDescription: ' + str(selection['Description'].item()) +
                     '\n\nAuthor: ' + str(selection['Author'].item())
                     )
-            except:
-                pass
-
-            url = str(selection['Url'].item())
-            try:  
-                data = urllib.request.urlopen(url).read()
-                pixmap = QPixmap()
-                pixmap.loadFromData(data)
-                self.dlg.Qlabel.setPixmap(pixmap.scaled(500,700, QtCore.Qt.KeepAspectRatio))
+                try:
+                    url = str(selection['Url'].item())
                 
-            except:
-                pass
+                    data = urllib.request.urlopen(url).read()
+                    pixmap = QPixmap()
+                    pixmap.loadFromData(data)
+                    self.dlg.Qlabel.setPixmap(pixmap.scaled(500,700, QtCore.Qt.KeepAspectRatio))
+                except:
+                    self.dlg.Qlabel.setText('No reference Image avalible for this Type')
+
+            else:
+                QMessageBox.information(None, "Error", 'No Type Selected')
+                print('a')
 
 
     def savefile(self):
@@ -509,6 +462,9 @@ class Urban_type_creator:
         vlayer = QgsVectorLayer(self.outputfile[0], Path(self.outputfile[0]).name[:-4])
 
         QgsProject.instance().addMapLayer(vlayer)
+        QMessageBox.information(None, "Process Complete", 'Your reclassified shapefile has been added to project')
+
+        
 
 
     def resetPlugin(self):

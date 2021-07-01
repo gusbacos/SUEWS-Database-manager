@@ -11,7 +11,6 @@
         copyright            : (C) 2021 by Oskar Bäcklin University of Gothenburg
         email                : oskar.backlin@gu.se
  ***************************************************************************/
-
 /***************************************************************************
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -21,6 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 """
+from __future__ import absolute_import
+from future import standard_library
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QFileDialog, QAction, QMessageBox
@@ -30,7 +31,7 @@ from qgis.core import  QgsMapLayerProxyModel, Qgis, QgsProject, QgsFieldProxyMod
 # Initialize Qt resources from file resources.py
 from .resources import *
 import pandas as pd
-import time 
+import re
 # Import the code for the dialog
 from .urban_type_db_editor_dialog import urban_type_db_editorDialog
 import os.path
@@ -41,7 +42,6 @@ class urban_type_db_editor:
 
     def __init__(self, iface):
         """Constructor.
-
         :param iface: An interface instance that will be passed to this class
             which provides the hook by which you can manipulate the QGIS
             application at run time.
@@ -63,6 +63,8 @@ class urban_type_db_editor:
             self.translator.load(locale_path)
             QCoreApplication.installTranslator(self.translator)
 
+        self.dlg = urban_type_db_editorDialog()
+
         # Declare instance attributes
         self.actions = []
         self.menu = self.tr(u'&Urban Type Database editor')
@@ -71,15 +73,13 @@ class urban_type_db_editor:
         # Must be set in initGui() to survive plugin reloads
         self.first_start = None
 
+
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
         """Get the translation for a string using Qt translation API.
-
         We implement this ourselves since we do not inherit QObject.
-
         :param message: String for translation.
         :type message: str, QString
-
         :returns: Translated version of message.
         :rtype: QString
         """
@@ -99,39 +99,29 @@ class urban_type_db_editor:
         whats_this=None,
         parent=None):
         """Add a toolbar icon to the toolbar.
-
         :param icon_path: Path to the icon for this action. Can be a resource
             path (e.g. ':/plugins/foo/bar.png') or a normal file system path.
         :type icon_path: str
-
         :param text: Text that should be shown in menu items for this action.
         :type text: str
-
         :param callback: Function to be called when the action is triggered.
         :type callback: function
-
         :param enabled_flag: A flag indicating if the action should be enabled
             by default. Defaults to True.
         :type enabled_flag: bool
-
         :param add_to_menu: Flag indicating whether the action should also
             be added to the menu. Defaults to True.
         :type add_to_menu: bool
-
         :param add_to_toolbar: Flag indicating whether the action should also
             be added to the toolbar. Defaults to True.
         :type add_to_toolbar: bool
-
         :param status_tip: Optional text to show in a popup when mouse pointer
             hovers over the action.
         :type status_tip: str
-
         :param parent: Parent widget for the new action. Defaults None.
         :type parent: QWidget
-
         :param whats_this: Optional text to show in the status bar when the
             mouse pointer hovers over the action.
-
         :returns: The action that was created. Note that the action is also
             added to self.actions list.
         :rtype: QAction
@@ -192,23 +182,22 @@ class urban_type_db_editor:
             self.first_start = False
             self.dlg = urban_type_db_editorDialog()
         
-        # Clear comboboxes at Select Table
         for i in range(2,15):
-            # Left side   
-            Ls = eval('self.dlg.textBrowser_' + str(i))
-            Ls.clear()
-            vars()['self.dlg.textBrowser_' + str(i)] = Ls
-            # Right Side
-            Rs = eval('self.dlg.textEdit_Edit_' + str(i))
-            Rs.clear()
-            vars()['self.dlg.textEdit_Edit_' + str(i)] = Rs
+            # Oc == Old Class
+            Oc = eval('self.dlg.textBrowser_' + str(i))
+            Oc.clear()
+            vars()['self.dlg.textBrowser_' + str(i)] = Oc
+
+            Nc = eval('self.dlg.textEdit_Edit_' + str(i))
+            Nc.clear()
+            vars()['self.dlg.textEdit_Edit_' + str(i)] = Nc
         
         self.dlg.comboBoxTableSelect.clear()
         self.dlg.comboBoxRef.clear()
         
-        # Set path to DB and read Sheets in DB xlsx
         db_path = r'C:\Script\NGEO306\database_copy.xlsx'
         idx_col = 'ID'
+        idx=-1
 
         Type = pd.read_excel(db_path, sheet_name= 'Lod1_Types', index_col=  idx_col)
         veg = pd.read_excel(db_path, sheet_name= 'Lod2_Veg', index_col = idx_col)
@@ -233,16 +222,17 @@ class urban_type_db_editor:
         dr = pd.read_excel(db_path, sheet_name= 'Lod3_Drainage', index_col= idx_col)
         dr.name = 'Lod3_Drainage'
 
-        # Dictionaries used to slice and index the Database
+
         table_dict = {
             'Emissivity': 'Lod3_Emissivity',
             'OHM': 'Lod3_OHM',
             'Albedo': 'Lod3_Albedo',
-            'Leaf Area Index': 'Lod3_LAI',  
+            'Leaf Area Index': 'Lod3_LAI',
             'Water Storage': 'Lod3_Storage',
             'Conductance': 'Lod3_Conductance',
             'Leaf Growth Power': 'Lod3_LGP',
             'Drainage': 'Lod3_Drainage'
+            #'Water' : 'Lod2_Water',
         }
 
         table_dict_ID = {
@@ -253,8 +243,11 @@ class urban_type_db_editor:
             'Water Storage': 'St',
             'Conductance': 'Cnd',
             'Leaf Growth Power': 'LGP',
-            'Drainage': 'Dr'
-            }
+            'Drainage': 'Dr',
+            'Vegetation' : 'Veg',
+            'Building' : 'NonVeg',
+            'Paved' : 'NonVeg',
+            'Bare Soil': 'NonVeg',}
 
         table_dict_pd = {
             'Emissivity': em,
@@ -264,7 +257,11 @@ class urban_type_db_editor:
             'Water Storage': st,
             'Conductance': cnd,
             'Leaf Growth Power': LGP,
-            'Drainage': dr
+            'Drainage': dr,
+            'Vegetation' : veg,
+            'Building' : nonveg,
+            'Paved' : nonveg,
+            'Bare Soil': nonveg,
             }
         
         dict_gen_type = {
@@ -274,18 +271,16 @@ class urban_type_db_editor:
             'Decidous Tree' : 'Veg',
             'Grass' : 'Veg',
             'Bare Soil' : 'NonVeg',
-            'Water' : 'Water',
-            'Roof' : 'NonVeg',
-            'Wall' : 'NonVeg'           
+            'Water' : 'Water'
+  
         }
 
-        # Add availible tables to the select table combobox
+
         rev_table_dict = dict((v, k) for k, v in table_dict.items())
+
         self.dlg.comboBoxTableSelect.addItems(list(rev_table_dict.values()))
         self.dlg.comboBoxTableSelect.setCurrentIndex(-1)
-
-        # add referece list and modify to show authors, (year). hence the for loop, list approachs
-        #        
+        
         ref_list = []
         for i in range(len(ref)):
             ref_list.append(str(ref['Author'].iloc[i]) + ' (' + str(ref['Publication Year'].iloc[i]) + ')')
@@ -293,51 +288,49 @@ class urban_type_db_editor:
         self.dlg.comboBoxRef.addItems(sorted(ref_list)) 
         self.dlg.comboBoxRef.setCurrentIndex(-1)
 
-        # Changes happening when selecting new table
+        self.dlg.pushButtonGen.clicked.connect(self.push_to_database)
+
+        
         def table_changed():
             table_name = self.dlg.comboBoxTableSelect.currentText()
             
             # Clear ComboBoxes
             self.dlg.textBrowserNewID.clear()
             self.dlg.textBrowserDf.clear()
-
             for i in range(2,15):
-                Ls = eval('self.dlg.textBrowser_' + str(i))
-                Ls.clear()
-                Ls.setDisabled(True)
-                vars()['self.dlg.textBrowser_' + str(i)] = Ls
+                # Oc == Old Class
+                Oc = eval('self.dlg.textBrowser_' + str(i))
+                Oc.clear()
+                Oc.setDisabled(True)
+                vars()['self.dlg.textBrowser_' + str(i)] = Oc
 
-                Rs = eval('self.dlg.textEdit_Edit_' + str(i))
-                Rs.clear()
-                Rs.setDisabled(True)
-                vars()['self.dlg.textEdit_Edit_' + str(i)] = Rs
+                Nc = eval('self.dlg.textEdit_Edit_' + str(i))
+                Nc.clear()
+                Nc.setDisabled(True)
+                vars()['self.dlg.textEdit_Edit_' + str(i)] = Nc
 
-            # Slice df to populate comboboxes with correct columns for the selected table
             try:
                 table = table_dict_pd[str(table_name)]
-                # if ((table_name == 'Vegetation') or (table_name == 'Paved') or (table_name == 'Building') == (table_name != 'Bare Soil')):
-                #     col_list = list(table)[1:-1]
-                # else:
-
-                # col list [ ] used to only show the columns needed  
                 col_list = list(table)[2:-1]
                 len_list = len(col_list)
 
                 idx = 2
-                for i in range(len_list):                    
-                    Ls = eval('self.dlg.textBrowser_' + str(idx))
-                    Ls.setEnabled(True)
-                    Ls.setText(str(col_list[i]))
-                    vars()['self.dlg.textBrowser_' + str(idx)] = Ls
+                for i in range(len_list):
+                    if idx > 13:
+                        break 
+                    # Left side
+                    Oc = eval('self.dlg.textBrowser_' + str(idx))
+                    Oc.setEnabled(True)
+                    Oc.setText(str(col_list[i]))
+                    vars()['self.dlg.textBrowser_' + str(idx)] = Oc
 
-                    Rs = eval('self.dlg.textEdit_Edit_' + str(idx))
-                    Rs.setEnabled(True)
-                    vars()['self.dlg.textEdit_Edit_' + str(idx)] = Rs
+                    Nc = eval('self.dlg.textEdit_Edit_' + str(idx))
+                    Nc.setEnabled(True)
+                    vars()['self.dlg.textEdit_Edit_' + str(idx)] = Nc
                     idx = idx+1
-                
-                # Assign a new ID to new edit 
-                self.dlg.textBrowserNewID.setText(table_dict_ID[str(self.dlg.comboBoxTableSelect.currentText())] + str(round(time.time())) ) #+ str(len(table) + 1))
-                # Fill the textbrowser with the dataframe from the selected table
+
+                self.dlg.textBrowserNewID.setText(table_dict_ID[str(self.dlg.comboBoxTableSelect.currentText())] + str(len(table) + 1))
+                #self.dlg.textBrowserNewID.setText(str(" ".join(re.findall("[a-zA-Z]+", table.index[1])))+ str(len(table)+1))
                 self.dlg.textBrowserDf.setText(str(table.drop(columns ='General Type').reset_index().to_html(index=False)))        
                 self.dlg.comboBoxSurface.setCurrentIndex(-1)
             except:
@@ -345,19 +338,18 @@ class urban_type_db_editor:
 
         self.dlg.comboBoxTableSelect.currentIndexChanged.connect(table_changed) 
         
-        # Update the table shown in the textBrowser to only show features with selected Surface Type
-        def change_surface():
+        def surface_changed():
             table_name = self.dlg.comboBoxTableSelect.currentText()
+            surface = self.dlg.comboBoxSurface.currentText()
             table = table_dict_pd[str(table_name)]
-            table = table[table['Surface'] == self.dlg.comboBoxSurface.currentText()]
-            self.dlg.textBrowserDf.clear()
-            self.dlg.textBrowserDf.setText(str(table.drop(columns ='General Type').reset_index().to_html(index=False)))        
+            table_sel = table[table['Surface'] == surface]
+            self.dlg.textBrowserDf.setText(str(table_sel.drop(columns ='General Type').reset_index().to_html(index=False))) 
 
-        self.dlg.comboBoxSurface.currentIndexChanged.connect(change_surface) 
+        self.dlg.comboBoxSurface.currentIndexChanged.connect(surface_changed)
 
-        # Show refenece information in the textBrowser for references
         def ref_changed():
             self.dlg.textBrowserRef.clear()
+
             try:
                 ID = ref[ref['authoryear'] ==  self.dlg.comboBoxRef.currentText()].index.item()
                 self.dlg.textBrowserRef.setText(
@@ -372,24 +364,22 @@ class urban_type_db_editor:
     
         self.dlg.comboBoxRef.currentIndexChanged.connect(ref_changed) 
 
-        reload_plugin = False
-        
-        # Checker to ensure compatibility to Database. Fill with warnings and caveats here
+        # show the dialog
+        self.dlg.show()
+        # Run the dialog event loop
+        result = self.dlg.exec_()
+        # See if OK was pressed
+        if result:
+            # Do something useful here - delete the line containing pass and
+            # substitute with your code.
+            pass
+        else:
+            self.dlg.__init__()
 
-        def check_compatibility():
-            if len(self.dlg.comboBoxRef.currentText()) == 0:
-                QMessageBox.critical(None, "Error", "No Reference is selected")
-            else:
-                self.dlg.pushButtonGen.setEnabled(True)
-
-        self.dlg.pushButtonCheck.clicked.connect(check_compatibility)
-
-        ## Final Step ## Push to database. '
-        ## TODO ## Update Database and GUI after Push To Database
-
-        def push_to_database():
-
+    def push_to_database(self):
+        try:
             db_path = r'C:\Script\NGEO306\database_copy.xlsx'   
+            idx_col = 'ID'
             
             Type = pd.read_excel(db_path, sheet_name= 'Lod1_Types', index_col=  idx_col)
             veg = pd.read_excel(db_path, sheet_name= 'Lod2_Veg', index_col = idx_col)
@@ -410,6 +400,48 @@ class urban_type_db_editor:
             LGP.name = 'Lod3_LGP'
             dr = pd.read_excel(db_path, sheet_name= 'Lod3_Drainage', index_col= idx_col)
             dr.name = 'Lod3_Drainage'
+            ref = pd.read_excel(db_path, sheet_name= 'References', index_col= idx_col)
+
+
+            table_dict_pd = {
+                'Emissivity': em,
+                'OHM': OHM,
+                'Albedo': alb,
+                'Leaf Area Index': LAI,
+                'Water Storage': st,
+                'Conductance': cnd,
+                'Leaf Growth Power': LGP,
+                'Drainage': dr,
+                'Vegetation' : veg,
+                'Building' : nonveg,
+                'Paved' : nonveg,
+                'Bare Soil': nonveg,
+            }
+            table_dict_ID = {
+                'Emissivity': 'Em',
+                'OHM': 'OHM',
+                'Albedo': 'Alb',
+                'Leaf Area Index': 'LAI',
+                'Water Storage': 'St',
+                'Conductance': 'Cnd',
+                'Leaf Growth Power': 'LGP',
+                'Drainage': 'Dr',
+                'Vegetation' : 'Veg',
+                'Building' : 'NonVeg',
+                'Paved' : 'NonVeg',
+                'Bare Soil': 'NonVeg',
+                }
+                
+            dict_gen_type = {
+                'Paved' : 'NonVeg',
+                'Building' : 'NonVeg',
+                'Evergreen Tree' : 'Veg',
+                'Decidous Tree' : 'Veg',
+                'Grass' : 'Veg',
+                'Bare Soil' : 'NonVeg',
+                'Water' : 'Water'
+    
+            }
 
             table = table_dict_pd[str(self.dlg.comboBoxTableSelect.currentText())]
             fill_table = pd.read_excel(db_path, sheet_name= table.name, index_col= 'ID')
@@ -417,24 +449,26 @@ class urban_type_db_editor:
             col_list = list(table)
             len_list = len(col_list)
 
+            idx = 1
             dict_reclass = {
-                'ID' : str(table_dict_ID[str(self.dlg.comboBoxTableSelect.currentText())] + str(round(time.time())) ), #+ str(len(table) + 1)),
-                'General Type' : dict_gen_type[self.dlg.comboBoxSurface.currentText()], # Add general type (Veg, NonVeg) According to selected Surface
+                'ID' : str(table_dict_ID[str(self.dlg.comboBoxTableSelect.currentText())] + str(len(table) + 1)),
+                'General Type' : dict_gen_type[self.dlg.comboBoxSurface.currentText()],
                 'Surface' : self.dlg.comboBoxSurface.currentText()
             }
         
             idx = 2
+
             for i in range(len_list-1):
                 if idx > 13:
                     break 
                 # Left side
-                Ls = eval('self.dlg.textBrowser_' + str(idx))
-                oldField = Ls.toPlainText()
-                vars()['self.dlg.textBrowser_' + str(idx)] = Ls
+                Oc = eval('self.dlg.textBrowser_' + str(idx))
+                oldField = Oc.toPlainText()
+                vars()['self.dlg.textBrowser_' + str(idx)] = Oc
                 # Right Side
-                Rs = eval('self.dlg.textEdit_Edit_' + str(idx))
-                newField = Rs.value()
-                vars()['self.dlg.textEdit_Edit_' + str(idx)] = Rs
+                Nc = eval('self.dlg.textEdit_Edit_' + str(idx))
+                newField = Nc.value()
+                vars()['self.dlg.textEdit_Edit_' + str(idx)] = Nc
                 dict_reclass[oldField] =  [newField]
 
                 idx += 1
@@ -446,19 +480,25 @@ class urban_type_db_editor:
             # IF Party to write to correct sheet in .xlsx
             
             var = self.dlg.comboBoxTableSelect.currentText()
-    
+
             if var == 'Emissivity':
                 em = em.append(df_new_edit)
+                print(em)
             elif var == 'OHM':
                 OHM = OHM.append(df_new_edit)
+                print(OHM)
             elif var == 'Leaf Area Index':
                 LAI = LAI.append(df_new_edit)
+                print(LAI)
             elif var == 'Conductance':
                 cnd = cnd.append(df_new_edit)
+                print(cnd)
             elif var == 'Leaf Growth Power':
                 LGP = LGP.append(df_new_edit)
+                print(LGP)
             elif var == 'Drainage':
                 dr = dr.append(df_new_edit)
+                print(dr)
             else:
                 print('Error!')
 
@@ -475,24 +515,14 @@ class urban_type_db_editor:
                 nonveg.to_excel(writer, sheet_name='Lod2_NonVeg')
                 LGP.to_excel(writer, sheet_name='Lod3_LGP')
                 dr.to_excel(writer, sheet_name='Lod3_Drainage')
-    
-            QMessageBox.information(None, "Sucessful",'Edit Successfully pushed to Database')
-            dict_reclass = None
-            df_new_edit = None
-            reload_plugin = True
-            print(dict_reclass)        
 
-        self.dlg.pushButtonGen.clicked.connect(push_to_database)
+                QMessageBox.information(None, "Sucessful",'Edit Successfully pushed to Database')
+            
+            # reset plugin and update according to changes
 
-        if reload_plugin == True:
-            self.initGui(self)
-        
-        # show the dialog
-        self.dlg.show()
-        # Run the dialog event loop
-        result = self.dlg.exec_()
-        # See if OK was pressed
-        if result:
-            # Do something useful here - delete the line containing pass and
-            # substitute with your code.
+            self.run()
+        except:
             pass
+
+        
+   
