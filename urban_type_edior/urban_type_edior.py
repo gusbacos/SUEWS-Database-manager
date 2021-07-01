@@ -71,8 +71,9 @@ class urban_type_editor:
 
         # Check if plugin was started the first time in current QGIS session
         # Must be set in initGui() to survive plugin reloads
+    
         self.first_start = None
-
+    
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
         """Get the translation for a string using Qt translation API.
