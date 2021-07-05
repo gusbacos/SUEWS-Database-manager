@@ -38,7 +38,7 @@ from .urban_type_edior_dialog import urban_type_editorDialog
 import os.path
 
 
-class urban_type_editor:
+class urban_type_editor(object):
     """QGIS Plugin Implementation."""
 
     def __init__(self, iface):
@@ -198,7 +198,38 @@ class urban_type_editor:
             self.first_start = False
             self.dlg = urban_type_editorDialog()
 
-        
+        # Clear 
+        self.dlg.comboBoxType.clear()
+        # line edits
+        self.dlg.TypeLineEditName.clearValue()
+        self.dlg.TypeLineEditLocation.clearValue()
+        self.dlg.TypeLineEditDesc.clearValue()
+        # Building
+        self.dlg.comboBoxWallMtr.clear()
+        self.dlg.comboBoxWallClr.clear()  
+        self.dlg.textBrowserWallFrom.clear()
+  
+        self.dlg.comboBoxRoofMtr.clear()
+        self.dlg.comboBoxRoofClr.clear()
+        self.dlg.textBrowserRoofFrom.clear()
+
+        # Paved
+        self.dlg.comboBoxPavedMtr.clear()
+        self.dlg.comboBoxPavedClr.clear()
+        self.dlg.textBrowserPavedFrom.clear()
+
+        # Vegetation
+        self.dlg.comboBoxEvrType.clear()
+        self.dlg.textBrowserEvrFrom.clear()
+        self.dlg.comboBoxDecType.clear()
+        self.dlg.textBrowserDecFrom.clear()
+        self.dlg.comboBoxGrassType.clear()
+        self.dlg.textBrowserGrassFrom.clear()
+
+        self.dlg.comboBoxBsoilType.clear()
+        self.dlg.textBrowserBsoilFrom.clear()
+        self.dlg.comboBoxBsoilClr.clear()
+
         db_path = r'C:\Script\NGEO306\database_copy.xlsx'
         idx_col = 'ID'
         idx=-1
@@ -215,87 +246,114 @@ class urban_type_editor:
         nonveg = pd.read_excel(db_path, sheet_name= 'Lod2_NonVeg', index_col = idx_col)
         LGP = pd.read_excel(db_path, sheet_name= 'Lod3_LGP', index_col= idx_col)
         dr = pd.read_excel(db_path, sheet_name= 'Lod3_Drainage', index_col= idx_col)
-        
-        # Clear all ComboBoxes
-        comboBoxList = [
-            self.dlg.comboBoxRegionIn,
-            self.dlg.comboBoxRegionOut,
-            ]
-        
-        for i in comboBoxList:
-            i.clear()   
-        
-        self.dlg.newTypeLineEdit.clearValue()
-        self.dlg.descLineEdit.clearValue()
 
-        # Add regions from Database to Comboboxes
-        self.dlg.comboBoxRegionIn.addItems([*set(Type['Region'])])
-        self.dlg.comboBoxRegionIn.setCurrentIndex(-1)
+        # Add available types to combobox
+        type_list = []
+        for i in range(len(Type)):
+            type_list.append(str(Type['Type'].iloc[i]) + ', ' + str(Type['Location'].iloc[i]))
+        Type['type_location'] = type_list
 
-        self.dlg.comboBoxRegionOut.addItems([*set(Type['Region'])])
-        self.dlg.comboBoxRegionOut.setCurrentIndex(-1)
+        self.dlg.comboBoxType.addItems(sorted(type_list)) 
+        self.dlg.comboBoxType.setCurrentIndex(-1)
 
-        def region_changed(): 
-            
-            idx_col = 'ID'
-            
-            reg = self.dlg.comboBoxRegionIn.currentText()
-            self.dlg.comboBoxType.clear()
-            self.dlg.comboBoxType.addItems(Type['Type'][Type['Region'] == reg])
-            self.dlg.comboBoxType.setCurrentIndex(0)
-            self.dlg.comboBoxType.setEnabled(True)
+        self.dlg.compButton.clicked.connect(self.check_type)
+        self.dlg.genButton.clicked.connect(self.generate_type)
 
-
-        self.dlg.comboBoxRegionIn.currentIndexChanged.connect(region_changed)
-        
         # Update rest of ComboBoxes
         def type_changed(): 
-            # Portal thoprugh types  
+            try:          
+                urb_type = self.dlg.comboBoxType.currentText()
+                TypeID =Type[Type['type_location'] == urb_type].index.item()
+        
+                for i in [self.dlg.comboBoxEvrType, self.dlg.comboBoxDecType, self.dlg.comboBoxGrassType,self.dlg.comboBoxWallMtr,
+                self.dlg.comboBoxRoofMtr,self.dlg.comboBoxWallClr,self.dlg.comboBoxRoofClr]:
+                    i.clear()
+        
+                def change_veg(cbox, surface, var, idx):
+                    cbox.clear()
+                    item_list = veg[var][veg['Surface'] == surface].tolist()
+                    [*set(item_list)]
+                    cbox.addItems([*set(item_list)])
+                    try:
+                        indexer = veg.loc[Type.loc[TypeID, surface],var]
+                        cbox.setCurrentIndex(item_list.index(indexer))
+                    except:
+                        pass
+
+                def change_nonveg(cbox, surface, var, idx):
+                    cbox.clear()
+                    item_list = nonveg[var][nonveg['Surface'] == surface].tolist()  
+                    cbox.addItems([*set(item_list)])
+                    try:
+                        indexer = nonveg.loc[Type.loc[TypeID, surface],var]
+                        cbox.setCurrentIndex(item_list.index(indexer))
+                    except:
+                        pass
+
+                change_veg(self.dlg.comboBoxEvrType,'Evergreen Tree', 'Type' , TypeID)
+                change_veg(self.dlg.comboBoxDecType,'Decidous Tree', 'Type' , TypeID)
+                change_veg(self.dlg.comboBoxGrassType,'Grass', 'Type' , TypeID)
+                change_nonveg(self.dlg.comboBoxWallMtr, 'Building', 'Type', TypeID)
+                change_nonveg(self.dlg.comboBoxRoofMtr, 'Building', 'Type', TypeID)
+                change_nonveg(self.dlg.comboBoxPavedMtr, 'Paved', 'Type', TypeID)
+                change_nonveg(self.dlg.comboBoxBsoilType, 'Bare Soil', 'Type', TypeID)
             
-            reg = self.dlg.comboBoxRegionIn.currentText()
-            urb_type = self.dlg.comboBoxType.currentText()
-
-            TypeID = Type.loc[(Type['Region'] == reg) & (Type['Type'] == urb_type)]
-            #veg_id = idx.reset_index()['ID'].item()
-  
-
-            # for i in [self.dlg.comboBoxEvrType, self.dlg.comboBoxDecType, self.dlg.comboBoxGrassType,self.dlg.comboBoxWallMtr,
-            #  self.dlg.comboBoxRoofMtr,self.dlg.comboBoxWallClr,self.dlg.comboBoxRoofClr]:
-            #     i.clear()
-       
-            def change_veg(cbox, col, var, idx):
-                cbox.clear()
-                item_list = veg[var][veg['Surface'] == col].tolist()
-                [*set(item_list)]
-                cbox.addItems([*set(item_list)])
-                if len(veg.loc[TypeID[col], var]) > 0:
-                    indexer = veg.loc[TypeID[col], var].item()
-                    cbox.setCurrentIndex(item_list.index(indexer))
-
-            def change_nonveg(cbox, col, var, idx):
-                cbox.clear()
-                item_list = nonveg[var][nonveg['Surface'] == col].tolist()
-                cbox.addItems([*set(item_list)])
-                if len(nonveg.loc[TypeID[col], var]) > 0:
-                    indexer = nonveg.loc[TypeID[col], var].item()
-                    cbox.setCurrentIndex(item_list.index(indexer))
-
-            change_veg(self.dlg.comboBoxEvrType,'Evergreen Tree', 'Type' , TypeID)
-            change_veg(self.dlg.comboBoxDecType,'Decidous Tree', 'Type' , TypeID)
-            change_veg(self.dlg.comboBoxGrassType,'Grass', 'Type' , TypeID)
-            
-            change_nonveg(self.dlg.comboBoxWallMtr, 'Building', 'Type', TypeID)
-            change_nonveg(self.dlg.comboBoxRoofMtr, 'Building', 'Type', TypeID)
-            change_nonveg(self.dlg.comboBoxWallClr, 'Building', 'Color', TypeID)
-            change_nonveg(self.dlg.comboBoxRoofClr, 'Building', 'Color', TypeID)
-
-            change_nonveg(self.dlg.comboBoxPavedMrt, 'Paved', 'Type', TypeID)
-            change_nonveg(self.dlg.comboBoxPavedClr, 'Paved', 'Color', TypeID)
-
+            except:
+                pass
+           
         self.dlg.comboBoxType.currentIndexChanged.connect(type_changed)
 
+        def mtr_change():
+                self.dlg.comboBoxWallClr.clear()
+                self.dlg.comboBoxRoofClr.clear()
+                self.dlg.comboBoxPavedClr.clear()
+                self.dlg.comboBoxBsoilClr.clear()
+
+                wall_clr_list = nonveg['Color'][(nonveg['Surface'] == 'Building') & (nonveg['Type'] == self.dlg.comboBoxWallMtr.currentText())].to_list()
+                roof_clr_list = nonveg['Color'][(nonveg['Surface'] == 'Building') & (nonveg['Type'] == self.dlg.comboBoxRoofMtr.currentText())].to_list()
+                paved_clr_list = nonveg['Color'][(nonveg['Surface'] == 'Paved') & (nonveg['Type'] == self.dlg.comboBoxPavedMtr.currentText())].to_list()
+                bsoil_clr_list = nonveg['Color'][(nonveg['Surface'] == 'Bare Soil') & (nonveg['Type'] == self.dlg.comboBoxBsoilType.currentText())].to_list()
+
+                self.dlg.comboBoxWallClr.addItems([*(wall_clr_list)])
+                self.dlg.comboBoxRoofClr.addItems([*(roof_clr_list)])
+                self.dlg.comboBoxPavedClr.addItems([*(paved_clr_list)])
+                self.dlg.comboBoxBsoilClr.addItems([*(bsoil_clr_list)])
+        
+        self.dlg.comboBoxWallMtr.currentIndexChanged.connect(mtr_change)
+        self.dlg.comboBoxRoofMtr.currentIndexChanged.connect(mtr_change)
+        self.dlg.comboBoxPavedMtr.currentIndexChanged.connect(mtr_change)
+        self.dlg.comboBoxBsoilType.currentIndexChanged.connect(mtr_change)
+
+
+        def clr_change():
+            try:
+                self.dlg.textBrowserWallFrom.setText(nonveg['Location'][(
+                    nonveg['Surface'] == 'Building') & 
+                    (nonveg['Type'] == self.dlg.comboBoxWallMtr.currentText()) & 
+                    (nonveg['Color'] == self.dlg.comboBoxWallClr.currentText())].item())
+
+                self.dlg.textBrowserRoofFrom.setText(nonveg['Location'][(
+                    nonveg['Surface'] == 'Building') & 
+                    (nonveg['Type'] == self.dlg.comboBoxRoofMtr.currentText()) & 
+                    (nonveg['Color'] == self.dlg.comboBoxRoofClr.currentText())].item())
+                    
+                self.dlg.textBrowserPavedFrom.setText(nonveg['Location'][(
+                    nonveg['Surface'] == 'Paved') & 
+                    (nonveg['Type'] == self.dlg.comboBoxPavedMtr.currentText()) & 
+                    (nonveg['Color'] == self.dlg.comboBoxPavedClr.currentText())].item())  
+                
+                self.dlg.textBrowserBsoilFrom.setText(nonveg['Location'][(
+                    nonveg['Surface'] == 'Bare Soil') & 
+                    (nonveg['Type'] == self.dlg.comboBoxBsoilType.currentText()) & 
+                    (nonveg['Color'] == self.dlg.comboBoxBsoilClr.currentText())].item())
+            except:
+                pass
+        self.dlg.comboBoxWallClr.currentIndexChanged.connect(clr_change)
+        self.dlg.comboBoxRoofClr.currentIndexChanged.connect(clr_change)  
+        self.dlg.comboBoxPavedClr.currentIndexChanged.connect(clr_change)  
+        self.dlg.comboBoxBsoilClr.currentIndexChanged.connect(clr_change)  
+
         def var_change():
-            reg = self.dlg.comboBoxRegionIn.currentText()
             urb_type = self.dlg.comboBoxType.currentText()
 
             def change_veg(cbox, col, var, idx):
@@ -307,7 +365,7 @@ class urban_type_editor:
                     indexer = veg.loc[TypeID[col], var].item()
                     cbox.setCurrentIndex(item_list.index(indexer))
 
-            TypeID = Type.loc[(Type['Region'] == reg) & (Type['Type'] == urb_type)]
+            # TypeID = Type.loc[(Type['Region'] == reg) & (Type['Type'] == urb_type)]
 
             # self.dlg.textBrowser.setText(
             #     '<b>New Type: ' + '</b> ' +  self.dlg.newTypeLineEdit.value() + '<br><b>' +
@@ -332,85 +390,25 @@ class urban_type_editor:
                     #'\nMax Albedo: ' +  '</b>' + str(alb.loc[veg.loc[veg[veg['Type'] == self.dlg.comboBoxEvrType.currentText()].index.item(), 'Alb'], 'Alb_max'])  
                     #str(alb.loc[nonveg['Alb'].loc[(nonveg['Material'] == self.dlg.comboBoxWallMtr.currentText()) & (nonveg['Color'] == self.dlg.comboBoxWallClr.currentText())].item(),'Alb_Min'])
             except:
-                pass                
-            
-            try:
-                self.dlg.textBrowserEvFrom.setText(str(veg['Location'].loc[(veg['Type'] == self.dlg.comboBoxEvrType.currentText())].item()))
-            except:
                 pass
+            try:             
+                #self.dlg.textBrowserWallFrom.setText(str(nonveg['Location'].loc[(nonveg['Type'] == self.dlg.comboBoxWallMtr.currentText())].item()))
+                #self.dlg.textBrowserRoofFrom2.setText(str(nonveg['Location'].loc[(nonveg['Type'] == self.dlg.comboBoxRoofMtr.currentText())].item()))
+                #self.dlg.textBrowserPavedFrom.setText(str(nonveg['Location'].loc[(nonveg['Type'] == self.dlg.comboBoxPavedMtr.currentText())].item()))
+                self.dlg.textBrowserEvrFrom.setText(str(veg['Location'].loc[veg['Type'] == self.dlg.comboBoxEvrType.currentText()].item()))
+                self.dlg.textBrowserDecFrom.setText(str(veg['Location'].loc[(veg['Type'] == self.dlg.comboBoxDecType.currentText())].item()))
+                self.dlg.textBrowserGrassFrom.setText(str(veg['Location'].loc[(veg['Type'] == self.dlg.comboBoxGrassType.currentText())].item()))
+            except:
+                pass    
         self.dlg.comboBoxEvrType.currentIndexChanged.connect(var_change)
         self.dlg.comboBoxDecType.currentIndexChanged.connect(var_change)
         self.dlg.comboBoxGrassType.currentIndexChanged.connect(var_change)
         self.dlg.comboBoxWallMtr.currentIndexChanged.connect(var_change)
-        self.dlg.comboBoxRegionOut.currentIndexChanged.connect(var_change)
-        self.dlg.descLineEdit.valueChanged.connect(var_change)
-        self.dlg.newTypeLineEdit.valueChanged.connect(var_change)
 
-
+        def escape():
+            print(' ')
         # Warnings and Messages when using check type
-        def check_type():
        
-            if self.dlg.newTypeLineEdit.value().startswith('test'):
-                QMessageBox.warning(None, "Error",'Please, don´t use test as type name..')
-            elif self.dlg.newTypeLineEdit.value().startswith('Test'):
-                QMessageBox.warning(None, "Error",'Please, don´t use test as type name..')
-            elif self.dlg.newTypeLineEdit.value() in Type['Type'].tolist():
-                QMessageBox.warning(None, "Error",'The suggested type name is already taken.')
-            elif self.dlg.newTypeLineEdit.isNull():
-                QMessageBox.warning(None, "Error",'Enter a name for new type')
-            # Final - When all is done
-            else:
-                QMessageBox.information(None, "Check Complete", 'Your type is compatible with the SUEWS-Database!\nPress Generate Type to add to Database')
-                self.dlg.genButton.setEnabled(True)
-
-        
-        self.dlg.compButton.clicked.connect(check_type)
-
-        def generate_type(self):
-
-            db_path = r'C:\Script\NGEO306\database_copy.xlsx'
-
-            Type = pd.read_excel(db_path, sheet_name= 'Lod1_Types', index_col=  idx_col)
-            new_type_dict = {
-                'ID' : len(Type)+1,
-                'Region' : self.dlg.comboBoxRegionOut.currentText(),
-                'Type' : self.dlg.newTypeLineEdit.value(),
-                'Default' : 'N',
-                'Description': self.dlg.descLineEdit.value(),
-                'Period' : 'testyear',
-                'Author' : 'SUEWS',
-                'Grass' : veg.index[veg['Type'] == self.dlg.comboBoxGrassType.currentText()].item(),
-                'Decidous Tree' : veg.index[veg['Type'] == self.dlg.comboBoxDecType.currentText()].item(),
-                'Evergreen Tree' : veg.index[veg['Type'] == self.dlg.comboBoxEvrType.currentText()].item(),
-                'Building' : 'NonVeg1',
-                'Paved' : 'NonVeg2'
-            }      
-                  
-            Type = Type.append(pd.DataFrame.from_dict([new_type_dict]).set_index('ID'))
-
-            db_path =r'C:\Script\NGEO306\database_copy.xlsx'
-
-            with pd.ExcelWriter(db_path) as writer:  
-                Type.to_excel(writer, sheet_name='Lod1_Types')
-                ref.to_excel(writer, sheet_name='References')
-                em.to_excel(writer, sheet_name='Lod3_Emissivity')
-                OHM.to_excel(writer, sheet_name='Lod3_OHM')
-                alb.to_excel(writer, sheet_name='Lod3_Albedo')
-                LAI.to_excel(writer, sheet_name='Lod3_LAI')
-                st.to_excel(writer, sheet_name='Lod3_Storage')
-                cnd.to_excel(writer, sheet_name='Lod3_Conductance')
-                veg.to_excel(writer, sheet_name='Lod2_Veg')
-                nonveg.to_excel(writer, sheet_name='Lod2_NonVeg')
-                LGP.to_excel(writer, sheet_name='Lod3_LGP')
-                dr.to_excel(writer, sheet_name='Lod3_Drainage')
-                # suews_veg.to_excel(writer, sheet_name='SUEWS_Veg')
-                # suews_nonveg.to_excel(writer, sheet_name='SUEWS_NonVeg')
-
-                QMessageBox.information(None, "Success", 'Type added to Database')
-
-
-            
-        self.dlg.genButton.clicked.connect(generate_type)
 
         # show the dialog
         self.dlg.show()
@@ -418,7 +416,110 @@ class urban_type_editor:
         result = self.dlg.exec_()
         # See if OK was pressed
         if result:
+            self.dlg.__init__()
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
             pass
+        else:
+            self.dlg.__init__()
+
+    def check_type(self):
+        db_path = r'C:\Script\NGEO306\database_copy.xlsx'
+        idx_col = 'ID'
+
+        Type = pd.read_excel(db_path, sheet_name= 'Lod1_Types', index_col=  idx_col)
+
+        # Name
+        if self.dlg.TypeLineEditName.value().startswith('test'):
+            QMessageBox.warning(None, "Error in Name",'Please, don´t use test as type name..')
+        elif self.dlg.TypeLineEditName.value().startswith('Test'):
+            QMessageBox.warning(None, "Error in Name",'Please, don´t use test as type name..')
+        elif self.dlg.TypeLineEditName.value() in Type['Type'].tolist():
+            QMessageBox.warning(None, "Error in Name",'The suggested type name is already taken.')
+        elif self.dlg.TypeLineEditName.isNull():
+            QMessageBox.warning(None, "Error in Name",'Enter a name for new type')
+
+        # Location
+        elif self.dlg.TypeLineEditLocation.isNull():
+            QMessageBox.warning(None, "Error in Location",'Enter a location for new type')
+
+        # Soil
+        elif self.dlg.lineEditBsoilDepth.isNull():
+            QMessageBox.warning(None, "Errorin Soil Depth",'Enter Soil Depth')
+
+        # Fix to only allow for decimals
+        # elif len(self.dlg.lineEditBsoilDepth.value())>0:
+            # try:
+            #     float(self.dlg.lineEditBsoilDepth.value())
+            #     QMessageBox.warning(None, "Error in Soil Depth",'Good Job')
+            
+            # except:
+            #     QMessageBox.warning(None, "Error in Soil Depth",'Invalid characters in Soil Depth! \nOnly 0-9 and . are allowed')
+            
+        elif self.dlg.lineEditBsoilDepth.value().replace(',','b').count('.')>1 or self.dlg.lineEditBsoilDepth.value().count(',')>1:
+            QMessageBox.warning(None, "Error in Soil Depth",'To many separators in Soil Depth')
+
+        # Final - When all is Checked 
+        else:
+            QMessageBox.information(None, "Check Complete", 'Your type is compatible with the SUEWS-Database!\nPress Generate Type to add to Database')
+            self.dlg.genButton.setEnabled(True)
+
+
+    def generate_type(self):
+        db_path = r'C:\Script\NGEO306\database_copy.xlsx'
+        idx_col = 'ID'
+
+        Type = pd.read_excel(db_path, sheet_name= 'Lod1_Types', index_col=  idx_col)
+        ref = pd.read_excel(db_path, sheet_name= 'References', index_col= idx_col)
+        alb =  pd.read_excel(db_path, sheet_name= 'Lod3_Albedo', index_col= idx_col)
+        em =  pd.read_excel(db_path, sheet_name= 'Lod3_Emissivity', index_col= idx_col)
+        OHM =  pd.read_excel(db_path, sheet_name= 'Lod3_OHM', index_col= idx_col) # Away from Veg
+        LAI =  pd.read_excel(db_path, sheet_name= 'Lod3_LAI', index_col= idx_col)
+        st = pd.read_excel(db_path, sheet_name= 'Lod3_Storage', index_col = idx_col)
+        cnd = pd.read_excel(db_path, sheet_name= 'Lod3_Conductance', index_col = idx_col) # Away from Veg
+        veg = pd.read_excel(db_path, sheet_name= 'Lod2_Veg', index_col = idx_col)
+        nonveg = pd.read_excel(db_path, sheet_name= 'Lod2_NonVeg', index_col = idx_col)
+        LGP = pd.read_excel(db_path, sheet_name= 'Lod3_LGP', index_col= idx_col)
+        dr = pd.read_excel(db_path, sheet_name= 'Lod3_Drainage', index_col= idx_col)
+
+        new_type_dict = {
+            'ID' : len(Type)+1,
+            'Location' : self.dlg.TypeLineEditLocation.value(),
+            'Type' :  self.dlg.TypeLineEditName.value(),
+            'Default' : 'N',
+            'Description': self.dlg.TypeLineEditDesc.value(),
+            'Period' : 'testyear',
+            'Url' : '', 
+            'Author' : 'SUEWS',
+            'Grass' : veg.index[veg['Type'] == self.dlg.comboBoxGrassType.currentText()].item(),
+            'Decidous Tree' : veg.index[veg['Type'] == self.dlg.comboBoxDecType.currentText()].item(),
+            'Evergreen Tree' : veg.index[veg['Type'] == self.dlg.comboBoxEvrType.currentText()].item(),
+            'Building' : 'NonVeg1',
+            'Paved' : 'NonVeg2'
+        }      
+        print(new_type_dict)                  
+        Type = Type.append(pd.DataFrame.from_dict([new_type_dict]).set_index('ID'))
+
+        db_path =r'C:\Script\NGEO306\database_copy.xlsx'
+
+        # with pd.ExcelWriter(db_path) as writer:  
+        #     Type.to_excel(writer, sheet_name='Lod1_Types')
+        #     ref.to_excel(writer, sheet_name='References')
+        #     em.to_excel(writer, sheet_name='Lod3_Emissivity')
+        #     OHM.to_excel(writer, sheet_name='Lod3_OHM')
+        #     alb.to_excel(writer, sheet_name='Lod3_Albedo')
+        #     LAI.to_excel(writer, sheet_name='Lod3_LAI')
+        #     st.to_excel(writer, sheet_name='Lod3_Storage')
+        #     cnd.to_excel(writer, sheet_name='Lod3_Conductance')
+        #     veg.to_excel(writer, sheet_name='Lod2_Veg')
+        #     nonveg.to_excel(writer, sheet_name='Lod2_NonVeg')
+        #     LGP.to_excel(writer, sheet_name='Lod3_LGP')
+        #     dr.to_excel(writer, sheet_name='Lod3_Drainage')
+        #     # suews_veg.to_excel(writer, sheet_name='SUEWS_Veg')
+        #     # suews_nonveg.to_excel(writer, sheet_name='SUEWS_NonVeg')
+
+        QMessageBox.information(None, "Success", 'Type added to Database')
+        self.run()
+
+
  

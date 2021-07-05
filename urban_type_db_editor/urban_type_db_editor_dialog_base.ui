@@ -243,6 +243,9 @@ p, li { white-space: pre-wrap; }
      </item>
      <item row="5" column="1">
       <widget class="QgsFilterLineEdit" name="textEdit_Edit_2">
+       <property name="inputMethodHints">
+        <set>Qt::ImhNone</set>
+       </property>
        <property name="qgisRelation" stdset="0">
         <string notr="true"/>
        </property>

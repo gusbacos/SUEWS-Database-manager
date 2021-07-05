@@ -37,7 +37,7 @@ from .urban_type_db_editor_dialog import urban_type_db_editorDialog
 import os.path
 
 
-class urban_type_db_editor:
+class urban_type_db_editor(object):
     """QGIS Plugin Implementation."""
 
     def __init__(self, iface):
@@ -232,7 +232,6 @@ class urban_type_db_editor:
             'Conductance': 'Lod3_Conductance',
             'Leaf Growth Power': 'Lod3_LGP',
             'Drainage': 'Lod3_Drainage'
-            #'Water' : 'Lod2_Water',
         }
 
         table_dict_ID = {
