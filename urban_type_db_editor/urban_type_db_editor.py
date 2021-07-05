@@ -32,6 +32,8 @@ from qgis.core import  QgsMapLayerProxyModel, Qgis, QgsProject, QgsFieldProxyMod
 from .resources import *
 import pandas as pd
 import re
+import time
+
 # Import the code for the dialog
 from .urban_type_db_editor_dialog import urban_type_db_editorDialog
 import os.path
@@ -450,7 +452,7 @@ class urban_type_db_editor(object):
 
             idx = 1
             dict_reclass = {
-                'ID' : str(table_dict_ID[str(self.dlg.comboBoxTableSelect.currentText())] + str(len(table) + 1)),
+                'ID' : str(table_dict_ID[str(self.dlg.comboBoxTableSelect.currentText())] + int(round(time.time()))),
                 'General Type' : dict_gen_type[self.dlg.comboBoxSurface.currentText()],
                 'Surface' : self.dlg.comboBoxSurface.currentText()
             }

@@ -397,7 +397,6 @@ class Urban_type_creator(object):
 
             else:
                 QMessageBox.information(None, "Error", 'No Type Selected')
-                print('a')
 
 
     def savefile(self):

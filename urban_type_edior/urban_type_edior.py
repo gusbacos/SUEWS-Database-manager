@@ -32,6 +32,7 @@ from pathlib import Path
 import geopandas as gpd
 import webbrowser
 import pandas as pd
+import re
 
 # Import the code for the dialog
 from .urban_type_edior_dialog import urban_type_editorDialog
@@ -405,8 +406,6 @@ class urban_type_editor(object):
         self.dlg.comboBoxGrassType.currentIndexChanged.connect(var_change)
         self.dlg.comboBoxWallMtr.currentIndexChanged.connect(var_change)
 
-        def escape():
-            print(' ')
         # Warnings and Messages when using check type
        
 
@@ -424,6 +423,10 @@ class urban_type_editor(object):
             self.dlg.__init__()
 
     def check_type(self):
+
+        def special_match(strg, search=re.compile(r'[^0-9.]').search):
+            return not bool(search(strg))
+
         db_path = r'C:\Script\NGEO306\database_copy.xlsx'
         idx_col = 'ID'
 
@@ -448,6 +451,9 @@ class urban_type_editor(object):
             QMessageBox.warning(None, "Errorin Soil Depth",'Enter Soil Depth')
 
         # Fix to only allow for decimals
+        elif special_match(self.dlg.lineEditBsoilDepth.value()) == False:
+            QMessageBox.warning(None, "Error in Soil Depth",'Invalid characters in Soil Depth! \nOnly 0-9 and . are allowed')
+
         # elif len(self.dlg.lineEditBsoilDepth.value())>0:
             # try:
             #     float(self.dlg.lineEditBsoilDepth.value())
