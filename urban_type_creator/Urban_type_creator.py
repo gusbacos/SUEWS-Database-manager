@@ -37,11 +37,13 @@ from pathlib import Path
 import geopandas as gpd
 import webbrowser
 import pandas as pd
+import codecs
+
 # from timezonefinder import TimezoneFinder as tf
 import urllib
 import time
 import re
-
+import openpyxl
 
 # Import the code for the dialog
 from .Urban_type_creator_dialog import Urban_type_creatorDialog
@@ -56,7 +58,7 @@ class Urban_type_creator(object):
         """Constructor.
 
         :param iface: An interface instance that will be passed to this class
-            which provides the hook by which you can manipulate the QGIS
+            which provides the hook by which you can manipulate the QGISs
             application at run time.
         :type iface: QgsInterface
         """
@@ -210,7 +212,7 @@ class Urban_type_creator(object):
 
         urban_creator = UrbanTypeCreator()
         self.setup_urban_type_creator(urban_creator)
-        self.dlg.tabWidget.addTab(urban_creator, 'Urban Type Creator')
+        self.dlg.tabWidget.addTab(urban_creator, 'Urban Type Classifier')
 
         urban_editor = UrbanTypeEditor()
         self.setup_urban_type_editor(urban_editor)
@@ -222,7 +224,7 @@ class Urban_type_creator(object):
 
         urban_db_editor = UrbanTypeDBEditor()
         self.setup_urban_db_type_editor(urban_db_editor)
-        self.dlg.tabWidget.addTab(urban_db_editor, 'Urban Type DB Editor')
+        self.dlg.tabWidget.addTab(urban_db_editor, 'SUEWS Table Editor')
 
     #################################################################################################
     #                                                                                               #
@@ -299,8 +301,6 @@ class Urban_type_creator(object):
 
         def typeInfo(): 
  
-            print('hej')
-
             dlg.Qlabel.clear()
             # self.dlg.Qlabel.clear()
             db_path = self.plugin_dir + '/database_copy.xlsx'
@@ -316,7 +316,7 @@ class Urban_type_creator(object):
             urb_type = dlg.comboBoxType.currentText() 
             selection = db.loc[db['type_location'] == urb_type]
             
-            if len(urb_type)>0:
+            if len(urb_type) > 0:
                 dlg.textBrowser.setText(
                     'Urban Type Info: '+ selection['Type'].item() +
                     '\n\nLocation: ' +  selection['Location'].item() +
@@ -333,9 +333,8 @@ class Urban_type_creator(object):
                     dlg.Qlabel.setPixmap(pixmap.scaled(500,700, QtCore.Qt.KeepAspectRatio))
                 except:
                     dlg.Qlabel.setText('No reference Image avalible for this Type')
-
             else:
-                QMessageBox.information(None, "Error", 'No Type Selected')
+                pass
 
         def savefile():
             self.outputfile = self.fileDialog.getSaveFileName(None, "Save File As:", None, "Shapefiles (*.shp)")
@@ -411,8 +410,11 @@ class Urban_type_creator(object):
         self.layerComboManagerPoint.setCurrentIndex(-1)
         self.layerComboManagerPoint.setFilters(QgsMapLayerProxyModel.PolygonLayer)
 
-        # Set up for the Type Info Button
-        dlg.typeInfoButton.clicked.connect(typeInfo)
+        # Set type info when changing type
+        dlg.comboBoxType.currentIndexChanged.connect(typeInfo)
+
+        # TODO fix changing the tab
+        # dlg.typeInfoButton.clicked.connect(# Go to tab 2 and have the type selected chosen in tab)
 
         # Set up for the run button
         dlg.runButton.clicked.connect(start_progress)
@@ -493,36 +495,12 @@ class Urban_type_creator(object):
 
         dlg.comboBoxBsoilType.clear()
         dlg.textBrowserBsoilFrom.clear()
-        dlg.comboBoxBsoilClr.clear()
 
         db_path = self.plugin_dir + '/database_copy.xlsx'
         idx_col = 'ID'
         idx=-1
 
-        Type = pd.read_excel(db_path, sheet_name= 'Lod1_Types', index_col=  idx_col)
-        veg = pd.read_excel(db_path, sheet_name= 'Lod2_Veg', index_col = idx_col)
-        veg.name = 'Lod2_Veg'
-        nonveg = pd.read_excel(db_path, sheet_name= 'Lod2_NonVeg', index_col = idx_col)
-        nonveg.name = 'Lod2_NonVeg'
-        bsoil = pd.read_excel(db_path, sheet_name= 'Lod2_BareSoil', index_col = idx_col)
-        bsoil.name = 'Lod2_BareSoil'
-        ref = pd.read_excel(db_path, sheet_name= 'References', index_col= idx_col)
-        alb =  pd.read_excel(db_path, sheet_name= 'Lod3_Albedo', index_col= idx_col)
-        alb.name = 'Lod3_Albedo'
-        em =  pd.read_excel(db_path, sheet_name= 'Lod3_Emissivity', index_col= idx_col)
-        em.name = 'Lod3_Emissivity'
-        OHM =  pd.read_excel(db_path, sheet_name= 'Lod3_OHM', index_col= idx_col) # Away from Veg
-        OHM.name = 'Lod3_OHM'
-        LAI =  pd.read_excel(db_path, sheet_name= 'Lod3_LAI', index_col= idx_col)
-        LAI.name = 'Lod3_OHM'
-        st = pd.read_excel(db_path, sheet_name= 'Lod3_Storage', index_col = idx_col)
-        st.name = 'Lod3_Storage'
-        cnd = pd.read_excel(db_path, sheet_name= 'Lod3_Conductance', index_col = idx_col) # Away from Veg
-        cnd.name = 'Lod3_Conductance'
-        LGP = pd.read_excel(db_path, sheet_name= 'Lod3_LGP', index_col= idx_col)
-        LGP.name = 'Lod3_LGP'
-        dr = pd.read_excel(db_path, sheet_name= 'Lod3_Drainage', index_col= idx_col)
-        dr.name = 'Lod3_Drainage'
+        Type, veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr = self.read_db()
 
         # Add available types to combobox
         type_list = []
@@ -557,13 +535,13 @@ class Urban_type_creator(object):
             elif dlg.TypeLineEditLocation.isNull():
                 QMessageBox.warning(None, "Error in Location",'Enter a location for new type')
 
-            # Soil
-            elif dlg.lineEditBsoilDepth.isNull():
-                QMessageBox.warning(None, "Errorin Soil Depth",'Enter Soil Depth')
+            # # Soil Depth soildepth
+            # elif dlg.lineEditBsoilDepth.isNull():
+            #     QMessageBox.warning(None, "Errorin Soil Depth",'Enter Soil Depth')
 
-            # Fix to only allow for decimals
-            elif special_match(dlg.lineEditBsoilDepth.value()) == False:
-                QMessageBox.warning(None, "Error in Soil Depth",'Invalid characters in Soil Depth! \nOnly 0-9 and . are allowed')
+            # # Fix to only allow for decimals
+            # elif special_match(dlg.lineEditBsoilDepth.value()) == False:
+            #     QMessageBox.warning(None, "Error in Soil Depth",'Invalid characters in Soil Depth! \nOnly 0-9 and . are allowed')
 
             # elif len(self.dlg.lineEditBsoilDepth.value())>0:
                 # try:
@@ -573,8 +551,8 @@ class Urban_type_creator(object):
                 # except:
                 #     QMessageBox.warning(None, "Error in Soil Depth",'Invalid characters in Soil Depth! \nOnly 0-9 and . are allowed')
                 
-            elif dlg.lineEditBsoilDepth.value().count('.') > 1:
-                QMessageBox.warning(None, "Error in Soil Depth",'To many separators in Soil Depth')
+            # elif dlg.lineEditBsoilDepth.value().count('.') > 1:
+            #     QMessageBox.warning(None, "Error in Soil Depth",'To many separators in Soil Depth')
 
             # Final - When all is Checked 
             else:
@@ -585,30 +563,7 @@ class Urban_type_creator(object):
             db_path = self.plugin_dir + '/database_copy.xlsx'
             idx_col = 'ID'
 
-            Type = pd.read_excel(db_path, sheet_name= 'Lod1_Types', index_col=  idx_col)
-            veg = pd.read_excel(db_path, sheet_name= 'Lod2_Veg', index_col = idx_col)
-            veg.name = 'Lod2_Veg'
-            nonveg = pd.read_excel(db_path, sheet_name= 'Lod2_NonVeg', index_col = idx_col)
-            nonveg.name = 'Lod2_NonVeg'
-            bsoil = pd.read_excel(db_path, sheet_name= 'Lod2_BareSoil', index_col = idx_col)
-            bsoil.name = 'Lod2_BareSoil'
-            ref = pd.read_excel(db_path, sheet_name= 'References', index_col= idx_col)
-            alb =  pd.read_excel(db_path, sheet_name= 'Lod3_Albedo', index_col= idx_col)
-            alb.name = 'Lod3_Albedo'
-            em =  pd.read_excel(db_path, sheet_name= 'Lod3_Emissivity', index_col= idx_col)
-            em.name = 'Lod3_Emissivity'
-            OHM =  pd.read_excel(db_path, sheet_name= 'Lod3_OHM', index_col= idx_col) # Away from Veg
-            OHM.name = 'Lod3_OHM'
-            LAI =  pd.read_excel(db_path, sheet_name= 'Lod3_LAI', index_col= idx_col)
-            LAI.name = 'Lod3_OHM'
-            st = pd.read_excel(db_path, sheet_name= 'Lod3_Storage', index_col = idx_col)
-            st.name = 'Lod3_Storage'
-            cnd = pd.read_excel(db_path, sheet_name= 'Lod3_Conductance', index_col = idx_col) # Away from Veg
-            cnd.name = 'Lod3_Conductance'
-            LGP = pd.read_excel(db_path, sheet_name= 'Lod3_LGP', index_col= idx_col)
-            LGP.name = 'Lod3_LGP'
-            dr = pd.read_excel(db_path, sheet_name= 'Lod3_Drainage', index_col= idx_col)
-            dr.name = 'Lod3_Drainage'
+            Type, veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr = self.read_db()
 
             new_type_dict = {
                 'ID' : len(Type)+1,
@@ -625,36 +580,10 @@ class Urban_type_creator(object):
                 'Building' : 'NonVeg1',
                 'Paved' : 'NonVeg2'
                 }      
-            print(new_type_dict)                  
+
             Type = Type.append(pd.DataFrame.from_dict([new_type_dict]).set_index('ID'))
 
-                # with pd.ExcelWriter(db_path) as writer:  
-                    # Type = pd.read_excel(db_path, sheet_name= 'Lod1_Types', index_col=  idx_col)
-                    # veg = pd.read_excel(db_path, sheet_name= 'Lod2_Veg', index_col = idx_col)
-                    # veg.name = 'Lod2_Veg'
-                    # nonveg = pd.read_excel(db_path, sheet_name= 'Lod2_NonVeg', index_col = idx_col)
-                    # nonveg.name = 'Lod2_NonVeg'
-                    # bsoil = pd.read_excel(db_path, sheet_name= 'Lod2_BareSoil', index_col = idx_col)
-                    # bsoil.name = 'Lod2_BareSoil'
-                    # ref = pd.read_excel(db_path, sheet_name= 'References', index_col= idx_col)
-                    # alb =  pd.read_excel(db_path, sheet_name= 'Lod3_Albedo', index_col= idx_col)
-                    # alb.name = 'Lod3_Albedo'
-                    # em =  pd.read_excel(db_path, sheet_name= 'Lod3_Emissivity', index_col= idx_col)
-                    # em.name = 'Lod3_Emissivity'
-                    # OHM =  pd.read_excel(db_path, sheet_name= 'Lod3_OHM', index_col= idx_col) # Away from Veg
-                    # OHM.name = 'Lod3_OHM'
-                    # LAI =  pd.read_excel(db_path, sheet_name= 'Lod3_LAI', index_col= idx_col)
-                    # LAI.name = 'Lod3_OHM'
-                    # st = pd.read_excel(db_path, sheet_name= 'Lod3_Storage', index_col = idx_col)
-                    # st.name = 'Lod3_Storage'
-                    # cnd = pd.read_excel(db_path, sheet_name= 'Lod3_Conductance', index_col = idx_col) # Away from Veg
-                    # cnd.name = 'Lod3_Conductance'
-                    # LGP = pd.read_excel(db_path, sheet_name= 'Lod3_LGP', index_col= idx_col)
-                    # LGP.name = 'Lod3_LGP'
-                    # dr = pd.read_excel(db_path, sheet_name= 'Lod3_Drainage', index_col= idx_col)
-                    # dr.name = 'Lod3_Drainage'     
-
-            QMessageBox.information(None, "Success", 'Type added to Database')
+            self.write_to_db(Type, veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr)
 
         # Update rest of ComboBoxes
         def type_changed(): 
@@ -730,20 +659,17 @@ class Urban_type_creator(object):
                 
                 dlg.textBrowserBsoilFrom.setText(bsoil['Location'][(
                     bsoil['Surface'] == 'Bare Soil') & 
-                    (bsoil['Type'] == dlg.comboBoxBsoilType.currentText()) & 
-                    (bsoil['Color'] == dlg.comboBoxBsoilClr.currentText())].item())
+                    (bsoil['Type'] == dlg.comboBoxBsoilType.currentText())].item())
             except:
                 pass
         dlg.comboBoxWallClr.currentIndexChanged.connect(clr_change)
         dlg.comboBoxRoofClr.currentIndexChanged.connect(clr_change)  
         dlg.comboBoxPavedClr.currentIndexChanged.connect(clr_change)  
-        dlg.comboBoxBsoilClr.currentIndexChanged.connect(clr_change)  
 
         def mtr_change():
                 dlg.comboBoxWallClr.clear()
                 dlg.comboBoxRoofClr.clear()
                 dlg.comboBoxPavedClr.clear()
-                dlg.comboBoxBsoilClr.clear()
 
                 wall_clr_list = nonveg['Color'][(nonveg['Surface'] == 'Building') & (nonveg['Type'] == dlg.comboBoxWallMtr.currentText())].to_list()
                 roof_clr_list = nonveg['Color'][(nonveg['Surface'] == 'Building') & (nonveg['Type'] == dlg.comboBoxRoofMtr.currentText())].to_list()
@@ -753,7 +679,6 @@ class Urban_type_creator(object):
                 dlg.comboBoxWallClr.addItems([*(wall_clr_list)])
                 dlg.comboBoxRoofClr.addItems([*(roof_clr_list)])
                 dlg.comboBoxPavedClr.addItems([*(paved_clr_list)])
-                dlg.comboBoxBsoilClr.addItems([*(bsoil_clr_list)])
         
         dlg.comboBoxWallMtr.currentIndexChanged.connect(mtr_change)
         dlg.comboBoxRoofMtr.currentIndexChanged.connect(mtr_change)
@@ -790,14 +715,28 @@ class Urban_type_creator(object):
                 dlg.textBrowserGrassFrom.setText(str(veg['Location'].loc[(veg['Type'] == dlg.comboBoxGrassType.currentText())].item()))
             except:
                 pass    
+        
+        def surface_info_changed(self):
+            dlg.comboBoxElementInfo.setEnabled(True)
+
 
         dlg.comboBoxEvrType.currentIndexChanged.connect(var_change)
         dlg.comboBoxDecType.currentIndexChanged.connect(var_change)
         dlg.comboBoxGrassType.currentIndexChanged.connect(var_change)
         dlg.comboBoxWallMtr.currentIndexChanged.connect(var_change)
+        
+        dlg.comboBoxSurface.currentIndexChanged.connect(surface_info_changed)
 
         dlg.compButton.clicked.connect(check_type)
         dlg.genButton.clicked.connect(generate_type)
+        dlg.genButton.clicked.connect(self.resetTypeEditor)
+        #        dlg.pushButtonUpdate.clicked.connect(self.resetTypeEditor)
+
+    def resetTypeEditor(self):
+        self.setup_tabs()
+        self.dlg.tabWidget.setCurrentIndex(1)
+        QMessageBox.information(None, "Sucessful",'Database Updated')
+
     #################################################################################################
     #                                                                                               #
     #                                  Urban surfaces Creator                                       #
@@ -805,109 +744,19 @@ class Urban_type_creator(object):
     #################################################################################################
 
     def setup_urban_elements_creator(self, dlg):
-        
-        for i in range(4,15):
-            Oc = eval('dlg.textBrowser_' + str(i))
-            Oc.clear()
-            vars()['dlg.textBrowser_' + str(i)] = Oc
 
-            Nc = eval('dlg.comboBox_' + str(i))
-            Nc.clear()
-            vars()['dlg.comboBox_' + str(i)] = Nc
+        # Read database and get dataframes
+        Type, veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr = self.read_db()
 
-        db_path = self.plugin_dir + '/database_copy.xlsx'
-        idx_col = 'ID'
-        idx=-1
-
-        Type = pd.read_excel(db_path, sheet_name= 'Lod1_Types', index_col=  idx_col)
-        veg = pd.read_excel(db_path, sheet_name= 'Lod2_Veg', index_col = idx_col)
-        veg.name = 'Lod2_Veg'
-        nonveg = pd.read_excel(db_path, sheet_name= 'Lod2_NonVeg', index_col = idx_col)
-        nonveg.name = 'Lod2_NonVeg'
-        bsoil = pd.read_excel(db_path, sheet_name= 'Lod2_BareSoil', index_col = idx_col)
-        bsoil.name = 'Lod2_BareSoil'
-        water = pd.read_excel(db_path, sheet_name= 'Lod2_Water', index_col = idx_col)
-        water.name = 'Lod2_Water'
-        ref = pd.read_excel(db_path, sheet_name= 'References', index_col= idx_col)
-        alb =  pd.read_excel(db_path, sheet_name= 'Lod3_Albedo', index_col= idx_col)
-        alb.name = 'Lod3_Albedo'
-        em =  pd.read_excel(db_path, sheet_name= 'Lod3_Emissivity', index_col= idx_col)
-        em.name = 'Lod3_Emissivity'
-        OHM =  pd.read_excel(db_path, sheet_name= 'Lod3_OHM', index_col= idx_col) # Away from Veg
-        OHM.name = 'Lod3_OHM'
-        LAI =  pd.read_excel(db_path, sheet_name= 'Lod3_LAI', index_col= idx_col)
-        LAI.name = 'Lod3_OHM'
-        st = pd.read_excel(db_path, sheet_name= 'Lod3_Storage', index_col = idx_col)
-        st.name = 'Lod3_Storage'
-        cnd = pd.read_excel(db_path, sheet_name= 'Lod3_Conductance', index_col = idx_col) # Away from Veg
-        cnd.name = 'Lod3_Conductance'
-        LGP = pd.read_excel(db_path, sheet_name= 'Lod3_LGP', index_col= idx_col)
-        LGP.name = 'Lod3_LGP'
-        dr = pd.read_excel(db_path, sheet_name= 'Lod3_Drainage', index_col= idx_col)
-        dr.name = 'Lod3_Drainage'
-
-
-        table_dict = {
-            'Emissivity': 'Lod3_Emissivity',
-            'OHM': 'Lod3_OHM',
-            'Albedo': 'Lod3_Albedo',
-            'Leaf Area Index': 'Lod3_LAI',
-            'Water Storage': 'Lod3_Storage',
-            'Conductance': 'Lod3_Conductance',
-            'Leaf Growth Power': 'Lod3_LGP',
-            'Drainage': 'Lod3_Dr-ainage'
-        }
-
-        table_dict_ID = {
-            'Emissivity': 'Em',
-            'OHM': 'OHM',
-            'Albedo': 'Alb',
-            'Leaf Area Index': 'LAI',
-            'Water Storage': 'St',
-            'Conductance': 'Cnd',
-            'Leaf Growth Power': 'LGP',
-            'Drainage': 'Dr',
-            'Vegetation' : 'Veg',
-            'Building' : 'NonVeg',
-            'Paved' : 'NonVeg',
-            'Bare Soil': 'Bsoil',}
-
-        table_dict_pd = {
-            'Emissivity': em,
-            'OHM': OHM,
-            'Albedo': alb,
-            'Leaf Area Index': LAI,
-            'Water Storage': st,
-            'Conductance': cnd,
-            'Leaf Growth Power': LGP,
-            'Drainage': dr,
-            'Evergreen Tree' : veg,
-            'Decidous Tree' : veg,
-            'Grass' : veg,
-            'Building' : nonveg,
-            'Paved' : nonveg,
-            'Bare Soil': bsoil,
-            'Water' : water
-            }
-
-        dict_str_var = {
-            'Em': em,
-            'OHM': OHM,
-            'Alb': alb,
-            'LAI': LAI,
-            'St': st,
-            'Cnd': cnd,
-            'LGP': LGP,
-            'Dr': dr
-            }
-
+        table_dict,table_dict_ID,table_dict_pd,dict_str_var = self.get_dicts(veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr)
+     
         rev_table_dict = dict((v, k) for k, v in table_dict_ID.items())
 
         
         def changed_surface():
             
             dlg.textBrowserDf.clear()
-            dlg.textBrowserTab.clear()
+            dlg.textBrowserNewID.clear()
             selected_surface = dlg.comboBoxSurface.currentText()
 
             drop_columns = ['Surface']
@@ -931,10 +780,16 @@ class Urban_type_creator(object):
                 dlg.textBrowserDf.setText(str(bsoil.drop(columns = drop_columns)
                 .reset_index().to_html(index=False)))
             if selected_surface == 'Water':
-                dlg.textBrowserDf.setText(str(water.reset_index().to_html(index=False)))#.drop(columns = 'Surface')
-            
+                dlg.textBrowserDf.setText(str(water.reset_index().to_html(index=False)))
+            try:
+                dlg.textBrowserNewID.setText(
+                    table_dict_ID[selected_surface] + str(int(round(time.time() * 100)))          
+                    )
+            except:
+                pass
+
             # Clear ComboBoxes 
-            for i in range(4,15):
+            for i in range(1,14):
                 Oc = eval('dlg.textBrowser_' + str(i))
                 Oc.clear()
                 Oc.setDisabled(True)
@@ -952,8 +807,8 @@ class Urban_type_creator(object):
                 
                 print(col_list)
 
-                idx = 4
-                for i in range(len_list):
+                idx = 1
+                for i in range(1,len_list):
                     # Left side
                     Oc = eval('dlg.textBrowser_' + str(idx))
                     Oc.setEnabled(True)
@@ -967,17 +822,18 @@ class Urban_type_creator(object):
                     Nc.setEnabled(True)
                     try:    
                         table = dict_str_var[col_list[i]]
-                        Nc.addItems(list(table.reset_index().loc[:,'ID'])) #[table['Surface'] == selected_surface]
+                        Nc.addItems(list(table[table['Surface'] == selected_surface].reset_index().loc[:,'ID'])) #
                         Nc.setCurrentIndex(-1)
                     except:
                         pass
-                    vars()['dlg.comboBox' + str(idx)] = Nc
 
-                    # Check Box
-                    Cb = eval('dlg.checkBoxA_' + str(idx)) 
-                    Cb.setChecked(False)
-                    vars()['dlg.comboBox' + str(idx)] = Cb
-                    idx = idx+1
+                    # vars()['dlg.comboBox_' + str(idx)] = Nc
+
+                    # # Check Box
+                    # Cb = eval('dlg.checkBoxA_' + str(idx)) 
+                    # Cb.setChecked(False)
+                    # vars()['dlg.comboBoxA_' + str(idx)] = Cb
+                    idx += 1
             except:
                 pass
 
@@ -987,17 +843,56 @@ class Urban_type_creator(object):
         dlg.comboBoxSurface.currentIndexChanged.connect(changed_surface)
         
         def print_table(idx):
-            dlg.textBrowserTab.clear()
-            table_indexer = eval('dlg.textBrowser_' + str(idx)) 
-            tab_name = table_indexer.toPlainText()
-            vars()['dlg.textBrowser_' + str(idx)] = table_indexer
-            try:
-                table = table_dict_pd[tab_name]
-                dlg.textBrowserTab.setText(str(table.reset_index().to_html(index=False)))
-            except:
-                pass
+            selected_surface = dlg.comboBoxSurface.currentText()
+            
+            # Get name of table to check for
+            table_name  = eval('dlg.textBrowser_' + str(idx)) 
+            vars()['dlg.textBrowser_' + str(idx)] = table_name
+            table_name = table_name.toPlainText()
+
+            table_indexer = eval('dlg.textBrowserTab' + str(idx)) 
+            table_indexer.clear()
+            vars()['dlg.textBrowserTab' + str(idx)] = table_indexer
+            
+            table_id = eval('dlg.comboBox_' + str(idx))
+            vars()['dlg.comboBox_' + str(idx)] = table_id
+            table_id = table_id.currentText()
+            print(table_id)
+            #try:
+            table = table_dict_pd[table_name]
+            
+            a = table.reset_index().style.apply(self.highlight, idx = table_id, column=['ID'], axis=1).set_properties(**{
+            'border' : '1px solid black',
+            'line-color':'black'}).render()
+
+            f = open(self.plugin_dir + "/sample.html", "w")
+            f.write(a)
+            f.close()
+            f = codecs.open(self.plugin_dir + "/sample.html", "r").read()
+            path = self.plugin_dir + "/sample.html"
+            table_indexer.setSource(QtCore.QUrl.fromLocalFile(path))
+                #(self.plugin_dir + "/sample.html"))
+
+
+            #dlg.graphicsView.addText(table.reset_index().style.apply(self.highlight, idx = table_id, column=['ID'], axis=1).render())
+
+
+            # table_indexer.setText(str(table[table['Surface'] == selected_surface].drop(columns = 'General Type').loc[[table_id]]
+            # .reset_index().to_html(index=False)))
+#                table_indexer.setText(str(table.drop(columns ='General Type').reset_index().to_html(index=False)))
+            
+            
+            # .setText(str(table[table['Surface'] == selected_surface].reset_index().drop(columns='General Type')).
+            #     to_html(index=False)
+            #     )
+            # except:
+            #     print('nein')
+            #     pass
      
         # Bad solution... but works
+        def cbox_1_g():print_table(1)
+        def cbox_2_g():print_table(2)
+        def cbox_3_g():print_table(3)
         def cbox_4_g():print_table(4)
         def cbox_5_g():print_table(5)
         def cbox_6_g():print_table(6)
@@ -1008,8 +903,10 @@ class Urban_type_creator(object):
         def cbox_11_g():print_table(11)
         def cbox_12_g():print_table(12)
         def cbox_13_g():print_table(13)
-        def cbox_14_g():print_table(14)
-        
+
+        dlg.comboBox_1.currentIndexChanged.connect(cbox_1_g)
+        dlg.comboBox_2.currentIndexChanged.connect(cbox_2_g)
+        dlg.comboBox_3.currentIndexChanged.connect(cbox_3_g)       
         dlg.comboBox_4.currentIndexChanged.connect(cbox_4_g)
         dlg.comboBox_5.currentIndexChanged.connect(cbox_5_g)
         dlg.comboBox_6.currentIndexChanged.connect(cbox_6_g)
@@ -1020,13 +917,31 @@ class Urban_type_creator(object):
         dlg.comboBox_11.currentIndexChanged.connect(cbox_11_g)
         dlg.comboBox_12.currentIndexChanged.connect(cbox_12_g)
         dlg.comboBox_13.currentIndexChanged.connect(cbox_13_g)
-        dlg.comboBox_14.currentIndexChanged.connect(cbox_14_g)
+ 
+
+        dlg.pushButtonUpdate.clicked.connect(self.reset_surface_editor)
+
+    def highlight(self, table, idx, column):
+        highlight = pd.Series(data = False, index = table.index)
+        highlight[column] = table.loc[column] == idx
+        return ['background-color:  #aeff88' if highlight.any() else '' for x in highlight]
+
+
+        # alb.reset_index().style.apply(self.highlight, idx = 'Alb5', column=['ID'], axis=1)
+
+    def reset_surface_editor(self):
+        self.setup_tabs()
+        self.dlg.tabWidget.setCurrentIndex(2)
+        QMessageBox.information(None, "Sucessful",'Database Updated')
+
+
+
 
         
 
     #################################################################################################
     #                                                                                               #
-    #                                  Urban Databatse Editor                                       #
+    #                                  Urban Database Editor                                        #
     #                                                                                               #
     #################################################################################################
 
@@ -1052,86 +967,10 @@ class Urban_type_creator(object):
         dlg.comboBoxTableSelect.clear()
         dlg.comboBoxRef.clear()
         
-        db_path = self.plugin_dir + '/database_copy.xlsx'
-        idx_col = 'ID'
-        idx=-1
-
-        Type = pd.read_excel(db_path, sheet_name= 'Lod1_Types', index_col=  idx_col)
-        veg = pd.read_excel(db_path, sheet_name= 'Lod2_Veg', index_col = idx_col)
-        veg.name = 'Lod2_Veg'
-        nonveg = pd.read_excel(db_path, sheet_name= 'Lod2_NonVeg', index_col = idx_col)
-        nonveg.name = 'Lod2_NonVeg'
-        bsoil = pd.read_excel(db_path, sheet_name= 'Lod2_BareSoil', index_col = idx_col)
-        bsoil.name = 'Lod2_BareSoil'
-        ref = pd.read_excel(db_path, sheet_name= 'References', index_col= idx_col)
-        alb =  pd.read_excel(db_path, sheet_name= 'Lod3_Albedo', index_col= idx_col)
-        alb.name = 'Lod3_Albedo'
-        em =  pd.read_excel(db_path, sheet_name= 'Lod3_Emissivity', index_col= idx_col)
-        em.name = 'Lod3_Emissivity'
-        OHM =  pd.read_excel(db_path, sheet_name= 'Lod3_OHM', index_col= idx_col) # Away from Veg
-        OHM.name = 'Lod3_OHM'
-        LAI =  pd.read_excel(db_path, sheet_name= 'Lod3_LAI', index_col= idx_col)
-        LAI.name = 'Lod3_OHM'
-        st = pd.read_excel(db_path, sheet_name= 'Lod3_Storage', index_col = idx_col)
-        st.name = 'Lod3_Storage'
-        cnd = pd.read_excel(db_path, sheet_name= 'Lod3_Conductance', index_col = idx_col) # Away from Veg
-        cnd.name = 'Lod3_Conductance'
-        LGP = pd.read_excel(db_path, sheet_name= 'Lod3_LGP', index_col= idx_col)
-        LGP.name = 'Lod3_LGP'
-        dr = pd.read_excel(db_path, sheet_name= 'Lod3_Drainage', index_col= idx_col)
-        dr.name = 'Lod3_Drainage'
+        Type, veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr = self.read_db()
 
 
-        table_dict = {
-            'Emissivity': 'Lod3_Emissivity',
-            'OHM': 'Lod3_OHM',
-            'Albedo': 'Lod3_Albedo',
-            'Leaf Area Index': 'Lod3_LAI',
-            'Water Storage': 'Lod3_Storage',
-            'Conductance': 'Lod3_Conductance',
-            'Leaf Growth Power': 'Lod3_LGP',
-            'Drainage': 'Lod3_Drainage'
-        }
-
-        table_dict_ID = {
-            'Emissivity': 'Em',
-            'OHM': 'OHM',
-            'Albedo': 'Alb',
-            'Leaf Area Index': 'LAI',
-            'Water Storage': 'St',
-            'Conductance': 'Cnd',
-            'Leaf Growth Power': 'LGP',
-            'Drainage': 'Dr',
-            'Vegetation' : 'Veg',
-            'Building' : 'NonVeg',
-            'Paved' : 'NonVeg',
-            'Bare Soil': 'NonVeg',}
-
-        table_dict_pd = {
-            'Emissivity': em,
-            'OHM': OHM,
-            'Albedo': alb,
-            'Leaf Area Index': LAI,
-            'Water Storage': st,
-            'Conductance': cnd,
-            'Leaf Growth Power': LGP,
-            'Drainage': dr,
-            'Vegetation' : veg,
-            'Building' : nonveg,
-            'Paved' : nonveg,
-            'Bare Soil': bsoil,
-            }
-        
-        dict_gen_type = {
-            'Paved' : 'NonVeg',
-            'Building' : 'NonVeg',
-            'Evergreen Tree' : 'Veg',
-            'Decidous Tree' : 'Veg',
-            'Grass' : 'Veg',
-            'Bare Soil' : 'NonVeg',
-            'Water' : 'Water'
-  
-        }
+        table_dict,table_dict_ID,table_dict_pd,dict_str_var = self.get_dicts(veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr)
 
 
         rev_table_dict = dict((v, k) for k, v in table_dict.items())
@@ -1148,7 +987,8 @@ class Urban_type_creator(object):
         
         def table_changed():
             table_name = dlg.comboBoxTableSelect.currentText()
-            
+            print(table_name)
+
             # Clear ComboBoxes
             dlg.textBrowserNewID.clear()
             dlg.textBrowserDf.clear()
@@ -1189,11 +1029,11 @@ class Urban_type_creator(object):
                     dlg.comboBoxSurface.addItems(['Evergreen Tree', 'Decidous Tree','Grass'])
                 else:
                     dlg.comboBoxSurface.clear()
-                    dlg.comboBoxSurface.addItems(['Paved', 'Bulding','Evergreen Tree', 'Deciduous Tree', 'Grass', 'Bare Soil', 'Water'])
+                    dlg.comboBoxSurface.addItems(['Paved', 'Buildings','Evergreen Tree', 'Deciduous Tree', 'Grass', 'Bare Soil', 'Water'])
                 dlg.comboBoxSurface.setEnabled(True)
                 dlg.comboBoxSurface.setCurrentIndex(-1)
 
-                dlg.textBrowserNewID.setText(table_dict_ID[str(dlg.comboBoxTableSelect.currentText())] + str(len(table) + 1))
+                dlg.textBrowserNewID.setText(table_dict_ID[table_name] + str(int(round(time.time() * 100))))
                 #self.dlg.textBrowserNewID.setText(str(" ".join(re.findall("[a-zA-Z]+", table.index[1])))+ str(len(table)+1))
                 dlg.textBrowserDf.setText(str(table.drop(columns ='General Type').reset_index().to_html(index=False)))        
                 dlg.comboBoxSurface.setCurrentIndex(-1)
@@ -1228,79 +1068,12 @@ class Urban_type_creator(object):
     
         dlg.comboBoxRef.currentIndexChanged.connect(ref_changed) 
 
-
-
-
         def push_to_database():
-  #          try:
             db_path = self.plugin_dir + '/database_copy.xlsx'  
-            idx_col = 'ID'
-            
-            Type = pd.read_excel(db_path, sheet_name= 'Lod1_Types', index_col=  idx_col)
-            veg = pd.read_excel(db_path, sheet_name= 'Lod2_Veg', index_col = idx_col)
-            veg.name = 'Lod2_Veg'
-            nonveg = pd.read_excel(db_path, sheet_name= 'Lod2_NonVeg', index_col = idx_col)
-            nonveg.name = 'Lod2_NonVeg'
-            bsoil = pd.read_excel(db_path, sheet_name= 'Lod2_BareSoil', index_col = idx_col)
-            bsoil.name = 'Lod2_BareSoil'
-            ref = pd.read_excel(db_path, sheet_name= 'References', index_col= idx_col)
-            alb =  pd.read_excel(db_path, sheet_name= 'Lod3_Albedo', index_col= idx_col)
-            alb.name = 'Lod3_Albedo'
-            em =  pd.read_excel(db_path, sheet_name= 'Lod3_Emissivity', index_col= idx_col)
-            em.name = 'Lod3_Emissivity'
-            OHM =  pd.read_excel(db_path, sheet_name= 'Lod3_OHM', index_col= idx_col) # Away from Veg
-            OHM.name = 'Lod3_OHM'
-            LAI =  pd.read_excel(db_path, sheet_name= 'Lod3_LAI', index_col= idx_col)
-            LAI.name = 'Lod3_OHM'
-            st = pd.read_excel(db_path, sheet_name= 'Lod3_Storage', index_col = idx_col)
-            st.name = 'Lod3_Storage'
-            cnd = pd.read_excel(db_path, sheet_name= 'Lod3_Conductance', index_col = idx_col) # Away from Veg
-            cnd.name = 'Lod3_Conductance'
-            LGP = pd.read_excel(db_path, sheet_name= 'Lod3_LGP', index_col= idx_col)
-            LGP.name = 'Lod3_LGP'
-            dr = pd.read_excel(db_path, sheet_name= 'Lod3_Drainage', index_col= idx_col)
-            dr.name = 'Lod3_Drainage'
+            Type, veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr = self.read_db()
 
+            table_dict,table_dict_ID,table_dict_pd,dict_str_var = self.get_dicts(veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr)
 
-            table_dict_pd = {
-                'Emissivity': em,
-                'OHM': OHM,
-                'Albedo': alb,
-                'Leaf Area Index': LAI,
-                'Water Storage': st,
-                'Conductance': cnd,
-                'Leaf Growth Power': LGP,
-                'Drainage': dr,
-                'Vegetation' : veg,
-                'Building' : nonveg,
-                'Paved' : nonveg,
-                'Bare Soil': bsoil,
-            }
-            table_dict_ID = {
-                'Emissivity': 'Em',
-                'OHM': 'OHM',
-                'Albedo': 'Alb',
-                'Leaf Area Index': 'LAI',
-                'Water Storage': 'St',
-                'Conductance': 'Cnd',
-                'Leaf Growth Power': 'LGP',
-                'Drainage': 'Dr',
-                'Vegetation' : 'Veg',
-                'Building' : 'NonVeg',
-                'Paved' : 'NonVeg',
-                'Bare Soil': 'NonVeg',
-                }
-                
-            dict_gen_type = {
-                'Paved' : 'NonVeg',
-                'Building' : 'NonVeg',
-                'Evergreen Tree' : 'Veg',
-                'Decidous Tree' : 'Veg',
-                'Grass' : 'Veg',
-                'Bare Soil' : 'NonVeg',
-                'Water' : 'Water'
-    
-            }
 
             table = table_dict_pd[str(dlg.comboBoxTableSelect.currentText())]
             fill_table = pd.read_excel(db_path, sheet_name= table.name, index_col= 'ID')
@@ -1343,6 +1116,9 @@ class Urban_type_creator(object):
             if var == 'Emissivity':
                 em = em.append(df_new_edit)
                 print(em)
+            if var == 'Albedo':
+                alb = alb.append(df_new_edit)
+                print(alb)
             elif var == 'OHM':
                 OHM = OHM.append(df_new_edit)
                 print(OHM)
@@ -1360,42 +1136,138 @@ class Urban_type_creator(object):
                 print(dr)
             else:
                 print('Error!')
-
-            # with pd.ExcelWriter(db_path) as writer:  
-            #     Type = pd.read_excel(db_path, sheet_name= 'Lod1_Types', index_col=  idx_col)
-                # veg = pd.read_excel(db_path, sheet_name= 'Lod2_Veg', index_col = idx_col)
-                # veg.name = 'Lod2_Veg'
-                # nonveg = pd.read_excel(db_path, sheet_name= 'Lod2_NonVeg', index_col = idx_col)
-                # nonveg.name = 'Lod2_NonVeg'
-                # bsoil = pd.read_excel(db_path, sheet_name= 'Lod2_BareSoil', index_col = idx_col)
-                # bsoil.name = 'Lod2_BareSoil'
-                # ref = pd.read_excel(db_path, sheet_name= 'References', index_col= idx_col)
-                # alb =  pd.read_excel(db_path, sheet_name= 'Lod3_Albedo', index_col= idx_col)
-                # alb.name = 'Lod3_Albedo'
-                # em =  pd.read_excel(db_path, sheet_name= 'Lod3_Emissivity', index_col= idx_col)
-                # em.name = 'Lod3_Emissivity'
-                # OHM =  pd.read_excel(db_path, sheet_name= 'Lod3_OHM', index_col= idx_col) # Away from Veg
-                # OHM.name = 'Lod3_OHM'
-                # LAI =  pd.read_excel(db_path, sheet_name= 'Lod3_LAI', index_col= idx_col)
-                # LAI.name = 'Lod3_OHM'
-                # st = pd.read_excel(db_path, sheet_name= 'Lod3_Storage', index_col = idx_col)
-                # st.name = 'Lod3_Storage'
-                # cnd = pd.read_excel(db_path, sheet_name= 'Lod3_Conductance', index_col = idx_col) # Away from Veg
-                # cnd.name = 'Lod3_Conductance'
-                # LGP = pd.read_excel(db_path, sheet_name= 'Lod3_LGP', index_col= idx_col)
-                # LGP.name = 'Lod3_LGP'
-                # dr = pd.read_excel(db_path, sheet_name= 'Lod3_Drainage', index_col= idx_col)
-                # dr.name = 'Lod3_Drainage'
-                QMessageBox.information(None, "Sucessful",'Edit Successfully pushed to Database')
             
-            # reset plugin and update according to changes
-
-                
+            # Write to db
+            self.write_to_db(Type, veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr)
+    
         # except:
         #         QMessageBox.information(None, "FAIL",'Edit NOT Successfully pushed to Database')
         #         pass
         dlg.pushButtonGen.clicked.connect(push_to_database)
-    
+        dlg.pushButtonUpdate.clicked.connect(self.reset_DB_editor)
+
+    def read_db(self):
+        db_path = self.plugin_dir + '/database_copy.xlsx'  
+        idx_col = 'ID'
+        
+        Type = pd.read_excel(db_path, sheet_name= 'Lod1_Types', index_col=  idx_col)
+        veg = pd.read_excel(db_path, sheet_name= 'Lod2_Veg', index_col = idx_col)
+        veg.name = 'Lod2_Veg'
+        nonveg = pd.read_excel(db_path, sheet_name= 'Lod2_NonVeg', index_col = idx_col)
+        nonveg.name = 'Lod2_NonVeg'
+        bsoil = pd.read_excel(db_path, sheet_name= 'Lod2_BareSoil', index_col = idx_col)
+        bsoil.name = 'Lod2_BareSoil'
+        water = pd.read_excel(db_path, sheet_name = 'Lod2_Water', index_col = idx_col)
+        water.name = 'Lod2_Water'
+        ref = pd.read_excel(db_path, sheet_name= 'References', index_col= idx_col)
+        alb =  pd.read_excel(db_path, sheet_name= 'Lod3_Albedo', index_col= idx_col)
+        alb.name = 'Lod3_Albedo'
+        em =  pd.read_excel(db_path, sheet_name= 'Lod3_Emissivity', index_col= idx_col)
+        em.name = 'Lod3_Emissivity'
+        OHM =  pd.read_excel(db_path, sheet_name= 'Lod3_OHM', index_col= idx_col) # Away from Veg
+        OHM.name = 'Lod3_OHM'
+        LAI =  pd.read_excel(db_path, sheet_name= 'Lod3_LAI', index_col= idx_col)
+        LAI.name = 'Lod3_OHM'
+        st = pd.read_excel(db_path, sheet_name= 'Lod3_Storage', index_col = idx_col)
+        st.name = 'Lod3_Storage'
+        cnd = pd.read_excel(db_path, sheet_name= 'Lod3_Conductance', index_col = idx_col) # Away from Veg
+        cnd.name = 'Lod3_Conductance'
+        LGP = pd.read_excel(db_path, sheet_name= 'Lod3_LGP', index_col= idx_col)
+        LGP.name = 'Lod3_LGP'
+        dr = pd.read_excel(db_path, sheet_name= 'Lod3_Drainage', index_col= idx_col)
+        dr.name = 'Lod3_Drainage'
+
+        return Type, veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr
+
+    def write_to_db(self,Type, veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr):
+
+            db_path = self.plugin_dir + '/database_copy.xlsx'  
+            writer = pd.ExcelWriter(db_path)
+
+            Type.to_excel(writer, sheet_name = 'Lod1_Types')
+            veg.to_excel(writer, sheet_name = 'Lod2_Veg')
+            nonveg.to_excel(writer, sheet_name = 'Lod2_NonVeg')
+            bsoil.to_excel(writer, sheet_name = 'Lod2_BareSoil')
+            water.to_excel(writer, sheet_name = 'Lod2_Water')
+            ref.to_excel(writer, sheet_name = 'References')
+            alb.to_excel(writer, sheet_name = 'Lod3_Albedo')
+            em.to_excel(writer, sheet_name = 'Lod3_Emissivity')
+            OHM.to_excel(writer, sheet_name = 'Lod3_OHM')
+            LAI.to_excel(writer, sheet_name = 'Lod3_LAI')
+            st.to_excel(writer, sheet_name = 'Lod3_Storage')
+            cnd.to_excel(writer, sheet_name = 'Lod3_Conductance')
+            LGP.to_excel(writer, sheet_name = 'Lod3_LGP')
+            dr.to_excel(writer, sheet_name = 'Lod3_Drainage')
+
+            writer.save()
+
+            QMessageBox.information(None, "Sucessful",'Edit Successfully pushed to Database')
+
+    def get_dicts(self,veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr):
+
+        table_dict = {
+            'Emissivity': 'Lod3_Emissivity',
+            'OHM': 'Lod3_OHM',
+            'Albedo': 'Lod3_Albedo',
+            'Leaf Area Index': 'Lod3_LAI',
+            'Water Storage': 'Lod3_Storage',
+            'Conductance': 'Lod3_Conductance',
+            'Leaf Growth Power': 'Lod3_LGP',
+            'Drainage': 'Lod3_Dr-ainage'
+        }
+
+        table_dict_ID = {
+            'Emissivity': 'Em',
+            'OHM': 'OHM',
+            'Albedo': 'Alb',
+            'Leaf Area Index': 'LAI',
+            'Water Storage': 'St',
+            'Conductance': 'Cnd',
+            'Leaf Growth Power': 'LGP',
+            'Drainage': 'Dr',
+            'Evergreen Tree' : 'Veg',
+            'Decidous Tree' : 'Veg',
+            'Grass' : 'Veg',
+            'Building' : 'NonVeg',
+            'Paved' : 'NonVeg',
+            'Bare Soil': 'Bsoil',
+            'Water' : 'Water'}
+
+        table_dict_pd = {
+            'Emissivity': em,
+            'OHM': OHM,
+            'Albedo': alb,
+            'Leaf Area Index': LAI,
+            'Water Storage': st,
+            'Conductance': cnd,
+            'Leaf Growth Power': LGP,
+            'Drainage': dr,
+            'Evergreen Tree' : veg,
+            'Decidous Tree' : veg,
+            'Grass' : veg,
+            'Building' : nonveg,
+            'Paved' : nonveg,
+            'Bare Soil': bsoil,
+            'Water' : water
+            }
+
+        dict_str_var = {
+            'Em': em,
+            'OHM': OHM,
+            'Alb': alb,
+            'LAI': LAI,
+            'St': st,
+            'Cnd': cnd,
+            'LGP': LGP,
+            'Dr': dr
+            }
+        
+        return table_dict,table_dict_ID,table_dict_pd,dict_str_var
+
+    def reset_DB_editor(self):
+        self.setup_tabs()
+        self.dlg.tabWidget.setCurrentIndex(3)
+        QMessageBox.information(None, "Sucessful",'Database Updated')
 
     def run(self):
         print('run')

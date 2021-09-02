@@ -1011,12 +1011,12 @@ p, li { white-space: pre-wrap; }
       </widget>
      </item>
      <item row="2" column="0">
-      <widget class="QPushButton" name="pushButtonreset">
+      <widget class="QPushButton" name="pushButtonUpdate">
        <property name="enabled">
-        <bool>false</bool>
+        <bool>true</bool>
        </property>
        <property name="text">
-        <string>Save Changes</string>
+        <string>Update Database</string>
        </property>
       </widget>
      </item>
