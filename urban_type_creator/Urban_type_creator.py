@@ -26,7 +26,6 @@ from qgis.PyQt.QtGui import QIcon, QPixmap
 from qgis.PyQt.QtWidgets import QFileDialog, QAction, QMessageBox
 from qgis.gui import QgsMapLayerComboBox, QgsFieldComboBox, QgsMessageBar
 from qgis.core import QgsVectorLayer, QgsMapLayerProxyModel, Qgis, QgsProject, QgsFieldProxyModel, QgsField
-# from ..urban_type_edior.urban_type_edior import urban_type_editor
 # Initialize Qt resources from file resources.py
 from .tabs.urban_type_creator_tab import UrbanTypeCreator
 from .tabs.urban_type_editor_tab import UrbanTypeEditor
@@ -42,8 +41,10 @@ import codecs
 # from timezonefinder import TimezoneFinder as tf
 import urllib
 import time
+import datetime
 import re
 import openpyxl
+# import excelrd as xlrd # Possibly needed for python 3.2. perhaps not
 
 # Import the code for the dialog
 from .Urban_type_creator_dialog import Urban_type_creatorDialog
@@ -89,9 +90,6 @@ class Urban_type_creator(object):
 
         # Declare Variables
         self.outputfile = None
-
-       
-
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -184,7 +182,6 @@ class Urban_type_creator(object):
         return action
 
     def initGui(self):
-        print('init_GUI')
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
         icon_path = ':/plugins/Urban_type_creator/icon.png'
@@ -197,7 +194,6 @@ class Urban_type_creator(object):
         # will be set False in run()
         self.first_start = False
 
-
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
@@ -205,7 +201,6 @@ class Urban_type_creator(object):
                 self.tr(u'&Urban_type_creator'),
                 action)
             self.iface.removeToolBarIcon(action)
-
 
     def setup_tabs(self):
         self.dlg.tabWidget.clear()
@@ -228,17 +223,18 @@ class Urban_type_creator(object):
 
     #################################################################################################
     #                                                                                               #
-    #                                     Urban Type Creator                                        #
+    #                                     Urban Type Classifier                                     #
     #                                                                                               #
     #################################################################################################
 
     def setup_urban_type_creator(self, dlg):
         # Create the dialog with elements (after translation) and keep reference
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
-        # if self.first_start == True:
-            # self.first_start = False
-            # self.dlg = UrbanTypeCreator()
+        if self.first_start == True:
+            self.first_start = False
+            self.dlg = UrbanTypeCreator()
         # dlg_ = UrbanTypeCreator()
+
 
         def layer_changed():
                 layer = self.layerComboManagerPoint.currentLayer()
@@ -267,7 +263,6 @@ class Urban_type_creator(object):
                     # Ensure always String 
                     unique_values = ([str(x) for x in unique_values])
 
-
                     for i in range(1,14):
                         # Oc == Old Class
                         Oc = eval('dlg.comboBoxClass' + str(i))
@@ -281,11 +276,10 @@ class Urban_type_creator(object):
                         vars()['dlg.comboBoxNew' + str(i)] = Nc
                     
                     # Add Items to left side Comboboxes and enable right side comboboxes 
-                    idx = 1
                     for i in range(len_uv):
+                        idx = i+1
                         if idx > 13:
                             break 
-                        # Left side
                         Oc = eval('dlg.comboBoxClass' + str(idx))
                         Oc.addItems(unique_values)
                         Oc.setCurrentIndex(i)
@@ -294,18 +288,15 @@ class Urban_type_creator(object):
                         Nc = eval('dlg.comboBoxNew' + str(idx))
                         Nc.setEnabled(True)
                         vars()['dlg.comboBoxNew' + str(idx)] = Nc
-
-                        idx += 1    
                 except:
                     pass
 
         def typeInfo(): 
- 
-            dlg.Qlabel.clear()
-            # self.dlg.Qlabel.clear()
-            db_path = self.plugin_dir + '/database_copy.xlsx'
 
-            # db = pd.read_csv(r'C:\Script\NGEO306\GHSL\UrbanTypes.txt', sep= '\t')
+            dlg.textOutput.clear()
+            dlg.Qlabel.clear()
+
+            db_path = self.plugin_dir + '/database_copy.xlsx'
             db = pd.read_excel(db_path, sheet_name= 'Lod1_Types', index_col=  'ID')
 
             type_list = []
@@ -316,32 +307,35 @@ class Urban_type_creator(object):
             urb_type = dlg.comboBoxType.currentText() 
             selection = db.loc[db['type_Origin'] == urb_type]
             
-            if len(urb_type) > 0:
+            try:
                 dlg.textBrowser.setText(
                     'Urban Type Info: '+ selection['Type'].item() +
                     '\n\nOrigin: ' +  selection['Origin'].item() +
                     '\n\nPeriod: ' + str(selection['Period'].item()) + 
                     '\n\nDescription: ' + str(selection['Description'].item()) +
-                    '\n\nAuthor: ' + str(selection['Author'].item())
+                    '\n\nAuthor: ' + str(selection['Author'].item()) 
+                    # '\n\nDate of Creation' + str(datetime.datetime.fromtimestamp(selection['ID'].item()).strftime('%Y-%m-%d %H:%M:%S'))
                     )
+                # Test if reference picture exists
                 try:
                     url = str(selection['Url'].item())
-                
                     data = urllib.request.urlopen(url).read()
                     pixmap = QPixmap()
                     pixmap.loadFromData(data)
                     dlg.Qlabel.setPixmap(pixmap.scaled(500,700, QtCore.Qt.KeepAspectRatio))
                 except:
                     dlg.Qlabel.setText('No reference Image avalible for this Type')
-            else:
+            except:
                 pass
 
         def savefile():
+            # Add possibilites to save as other format? Is .shp only format used in SUEWS Prepare?
             self.outputfile = self.fileDialog.getSaveFileName(None, "Save File As:", None, "Shapefiles (*.shp)")
             dlg.textOutput.setText(self.outputfile[0])
 
         def help():
             url = "https://github.com/gusbacos/UTDB"
+            # To readthedocs? 
             webbrowser.open_new_tab(url)
 
         def start_progress():
@@ -373,7 +367,8 @@ class Urban_type_creator(object):
                 idx += 1
 
         
-            # Backup not using GeoPandas ********
+            # Backup not using GeoPandas
+
             # vlayer_provider=vlayer.dataProvider()
             # vlayer.dataProvider().addAttributes([QgsField('newfield',QVariant.String)])
             # vlayer.updateFields()
@@ -394,14 +389,8 @@ class Urban_type_creator(object):
             vlayer = QgsVectorLayer(self.outputfile[0], Path(self.outputfile[0]).name[:-4])
 
             QgsProject.instance().addMapLayer(vlayer)
-            QMessageBox.information(None, "Process Complete", 'Your reclassified shapefile has been added to project')
-
-            # dlg.comboBoxField.clear()
-            # dlg.comboBoxField.setDisabled(True)
-            # dlg.comboBoxType.clear()
-            # dlg.textBrowser.clear()
+            QMessageBox.information(None, "Process Complete", 'Your reclassified shapefile has been added to project. Proceed to SUEWS-Preprare')
             dlg.textOutput.clear()
-            # dlg.Qlabel.clear()
         
         self.layerComboManagerPoint = dlg.comboBoxVector
         self.layerComboManagerPoint.setCurrentIndex(-1)
@@ -458,9 +447,9 @@ class Urban_type_creator(object):
     def setup_urban_type_editor(self, dlg):
         # Create the dialog with elements (after translation) and keep reference
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
-        # if self.first_start == True:
-        #     self.first_start = False
-        #     self.dlg = urban_type_editorDialog()
+        if self.first_start == True:
+            self.first_start = False
+            self.dlg = urban_type_editorDialog()
 
         # Clear 
         dlg.comboBoxType.clear()
@@ -561,7 +550,7 @@ class Urban_type_creator(object):
             idx_col = 'ID'
 
             Type, veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr = self.read_db()
-            table_dict,table_dict_ID,table_dict_pd,dict_str_var = self.get_dicts(veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr)
+            table_dict,table_dict_ID,table_dict_pd,dict_str_var, dict_gen_type = self.get_dicts(veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr)
 
 
             new_type_dict = {
@@ -687,7 +676,7 @@ class Urban_type_creator(object):
         def var_change():
             urb_type = dlg.comboBoxType.currentText()
 
-            def change_veg(cbox, col, var, idx):
+            def change_veg(cbox, col, var):
                 cbox.clear()
                 item_list = veg[var][veg['Type'] == col].tolist()
                 [*set(item_list)]
@@ -736,6 +725,7 @@ class Urban_type_creator(object):
             elif surface == 'Water':
                 item_list = nonveg['Type'][nonveg['Surface'] == surface].tolist()
                 origin = nonveg['Origin'][nonveg['Surface'] == surface].tolist()
+
                 app_list = []
                 for i, j in zip(item_list, origin):
                     # Join type and origin to present for user
@@ -744,25 +734,13 @@ class Urban_type_creator(object):
             else: 
                 item_list = veg['Type'][veg['Surface'] == surface].tolist()
                 origin = veg['Origin'][veg['Surface'] == surface].tolist()
+
                 app_list = []
                 for i, j in zip(item_list, origin):
                     # Join type and origin to present for user
                     app_list.append((i + ', ' + j))
 
-            # # Add avalible elements from the local database
-            # item_list = lod2['Type'][lod2['Surface'] == surface].tolist()
-            # origin = lod2['Origin'][lod2['Surface'] == surface].tolist()
-            # app_list = []
-            # for i, j in zip(item_list, origin):
-            #     # Join type and origin to present for user
-            #     app_list.append((i + ', ' + j))
-
             dlg.comboBoxElementInfo.addItems(app_list)
-
-
-
-
-
 
         dlg.comboBoxEvrType.currentIndexChanged.connect(var_change)
         dlg.comboBoxDecType.currentIndexChanged.connect(var_change)
@@ -792,19 +770,32 @@ class Urban_type_creator(object):
         # Read database and get dataframes
         Type, veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr = self.read_db()
 
-        table_dict,table_dict_ID,table_dict_pd,dict_str_var = self.get_dicts(veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr)
+        table_dict,table_dict_ID,table_dict_pd,dict_str_var,dict_gen_type = self.get_dicts(veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr)
      
         rev_table_dict = dict((v, k) for k, v in table_dict_ID.items())
+        
+        dlg.comboBoxSurface.setCurrentIndex(-1)
 
         def changed_surface():
             
             dlg.textBrowserDf.clear()
-            dlg.textBrowserNewID.clear()
             selected_surface = dlg.comboBoxSurface.currentText()
+
+            for i in range(0,13):
+                Oc = eval('dlg.textBrowser_' + str(i))
+                Oc.clear()
+                Oc.setDisabled(True)
+                Nc = eval('dlg.comboBox_' + str(i))
+                Nc.setDisabled(True)
+                Nc.clear()
+                Tb = eval('dlg.textBrowserTab' + str(i))
+                Tb.setDisabled(True)
+                Tb.clear()
 
             # Clear and enable ComboBox
             dlg.comboBoxElement.clear()
             dlg.comboBoxElement.setEnabled(True)
+            
             # Read what surface user has chosen
             surface = dlg.comboBoxSurface.currentText()
 
@@ -838,78 +829,34 @@ class Urban_type_creator(object):
             dlg.comboBoxElement.addItems(app_list)
             dlg.comboBoxElement.setCurrentIndex(-1)
 
-            drop_columns = ['Surface']
-
-            # if selected_surface == 'Building':
-            #     dlg.textBrowserDf.setText(str(nonveg[nonveg['Surface'] == 'Building'].drop(columns = drop_columns)
-            #     .reset_index().to_html(index=False)))
-            # if selected_surface == 'Paved':
-            #     dlg.textBrowserDf.setText(str(nonveg[nonveg['Surface'] == 'Paved'].drop(columns = drop_columns)
-            #     .reset_index().to_html(index=False)))
-            # if selected_surface == 'Evergreen Tree':
-            #     dlg.textBrowserDf.setText(str(veg[veg['Surface'] == 'Evergreen Tree'].drop(columns = drop_columns)
-            #     .reset_index().to_html(index=False)))
-            # if selected_surface == 'Decidous Tree':
-            #     dlg.textBrowserDf.setText(str(veg[veg['Surface'] == 'Decidous Tree'].drop(columns = drop_columns)
-            #     .reset_index().to_html(index=False)))
-            # if selected_surface == 'Grass':
-            #     dlg.textBrowserDf.setText(str(veg[veg['Surface'] == 'Grass'].drop(columns = drop_columns)
-            #     .reset_index().to_html(index=False)))
-            # if selected_surface == 'Bare Soil':
-            #     dlg.textBrowserDf.setText(str(bsoil.drop(columns = drop_columns)
-            #     .reset_index().to_html(index=False)))
-            # if selected_surface == 'Water':
-            #     dlg.textBrowserDf.setText(str(water.reset_index().to_html(index=False)))
-            # try:
-            #     dlg.textBrowserNewID.setText(
-            #         table_dict_ID[selected_surface] + str(int(round(time.time() * 100)))          
-            #         )
-            # except:
-                # pass
-
-            # Clear ComboBoxes 
-            idx = 1
-            for i in range(1,14):
-                Oc = eval('dlg.textBrowser_' + str(i))
-                Oc.clear()
-                Oc.setDisabled(True)
-                vars()['dlg.textBrowser_' + str(i)] = Oc
-
-                Nc = eval('dlg.comboBox_' + str(i))
-                Nc.clear()
-                Nc.setDisabled(True)
-                vars()['dlg.comboBox_' + str(i)] = Nc
-
-                Tb = eval('dlg.textBrowserTab' + str(i))
-                Tb.clear()
-                Tb.setDisabled(True)
-                vars()['dlg.textBrowserTab' + str(i)] = Tb
-
-            # try:
             table = table_dict_pd[str(selected_surface)]
             col_list = list(table)
-            # remove non wanted columns from list
+
             remove_cols = ['ID', 'Surface', 'Color', 'Origin', 'Type']
-            for i in remove_cols:
+            for col in remove_cols:
                 try:
-                    col_list.remove(i)
+                    col_list.remove(col)
                 except:
                     pass
+            # Clear ComboBoxes 
 
-            len_list = len(col_list)
-            
-            for i in range(1,len_list):
-                print('i',i)
-                print('idx',idx)
-                # Left side
-                Oc = eval('dlg.textBrowser_' + str(idx))
+            for i in range(len(col_list)): # Range needs to be fixed...
+                          
+                Oc = eval('dlg.textBrowser_' + str(i))
                 Oc.setEnabled(True)
-                Tb = eval('dlg.textBrowserTab' + str(idx))
+                # Tb = Text Browser with table
+                Tb = eval('dlg.textBrowserTab' + str(i))
                 Tb.setEnabled(True)
-                Nc = eval('dlg.comboBox_' + str(idx))
-                Nc.setEnabled(False)
-            
-                table_name_str = rev_table_dict[col_list[i]]
+                # Nc = Combobox with selectable table rows
+                Nc = eval('dlg.comboBox_' + str(i))
+                Nc.setEnabled(True)
+
+                try:
+                    table_name_str = rev_table_dict[col_list[i]]
+                except:
+                    pass
+                
+                # Fill in name of table
                 Oc.setText(table_name_str)
 
                 table = table_dict_pd[table_name_str]
@@ -918,59 +865,18 @@ class Urban_type_creator(object):
                 table_sel = table_surf.drop(columns =['Surface','General Type']).reset_index()
                 table_sel = table_sel.drop(columns = 'ID')
                 Tb.setText(str(table_sel.to_html(index=True))) 
-    
-                vars()['dlg.textBrowser_' + str(idx)] = Oc
-                vars()['dlg.textBrowserTab' + str(idx)] = Tb
-                vars()['dlg.comboBox_' + str(idx)] = Nc
 
+                Nc_fill_list = []
+                idx = 0
+                for desc, orig in zip(table_surf['Description'].tolist() ,table_surf['Origin'].tolist()):
+                    Nc_fill_list.append((str(idx) + ':' + desc + ', ' + orig))
+                    idx = +1
+                Nc.addItems(Nc_fill_list)
 
-                table_desc = table['Description'].tolist()
-                table_orig = table['Origin'].tolist()
-
-                try:
-                    app_list = []
-                    for i, j in zip(table_desc,table_orig):
-                    # Join type and origin to present for user
-                        app_list.append((i + ', ' + j))
-
-                    # print(idx, table_name_str, app_list)
-
-                
-                    
-                    # Nc.addItems(['no avalible data'])
-                except:
-                    pass
-                
-                
-                # print(app_list)
-                # except:
-                #     print('fail')
-
-                # table_sel_surf = table:[table['Surface'] == surface]
-                # type_thing = table_sel_surf['Description'].tolist
-                # print(type_thing)
-
-                # try:    
-                #     table2 = dict_str_var[col_list[i]]
-                #     Nc.addItems(list(table2[table2['Surface'] == selected_surface].reset_index().loc[:,'ID'])) #
-                #     Nc.setCurrentIndex(-1)
-                # except:
-                #     pass
-
-                
-
-                # # Check Box
-                # Cb = eval('dlg.checkBoxA_' + str(idx)) 
-                # Cb.setChecked(False)
-                # vars()['dlg.comboBoxA_' + str(idx)] = Cb
-                idx += 1
-            # except:
-            #     idx += 1
-
-
-
-            # dlg.textBrowserDf.setText(str(water.reset_index().to_html(index=False)))#.drop(columns = 'Surface')
-        # Connections
+                vars()['dlg.textBrowser_' + str(i)] = Oc
+                vars()['dlg.textBrowserTab' + str(i)] = Tb
+                vars()['dlg.comboBox_' + str(i)] = Nc
+        
         dlg.comboBoxSurface.currentIndexChanged.connect(changed_surface)
         
         def print_table(idx):
@@ -985,7 +891,6 @@ class Urban_type_creator(object):
 
             table = table_name[table_name['Surface'] == surface]
 
-
             table_indexer = eval('dlg.textBrowserTab' + str(idx)) 
             table_indexer.clear()
             vars()['dlg.textBrowserTab' + str(idx)] = table_indexer
@@ -993,70 +898,84 @@ class Urban_type_creator(object):
             table_id = eval('dlg.comboBox_' + str(idx))
             vars()['dlg.comboBox_' + str(idx)] = table_id
             table_id = table_id.currentText()
-        #     #try:
-        #     table = table_dict_pd[table_name]
-            
-        #     a = table.reset_index().style.apply(self.highlight, idx = table_id, column=['ID'], axis=1).set_properties(**{
-        #     'border' : '1px solid black',
-        #     'line-color':'black'}).render()
-
-        #     f = open(self.plugin_dir + "/sample.html", "w")
-        #     f.write(a)
-        #     f.close()
-        #     f = codecs.open(self.plugin_dir + "/sample.html", "r").read()
-        #     path = self.plugin_dir + "/sample.html"
-        #     table_indexer.setSource(QtCore.QUrl.fromLocalFile(path))
-        #         #(self.plugin_dir + "/sample.html"))
-
-
-        #     # dlg.graphicsView.addText(table.reset_index().style.apply(self.highlight, idx = table_id, column=['ID'], axis=1).render())
-
-
-        #     table_indexer.setText(str(table[table['Surface'] == selected_surface].drop(columns = 'General Type').loc[[table_id]]
-        #     .reset_index().to_html(index=False)))
-        #     table_indexer.setText(str(table.drop(columns ='General Type').reset_index().to_html(index=False))).setText(str(table[table['Surface'] == selected_surface].reset_index().drop(columns='General Type')).to_html(index=False))
-        #     # except:
-        #     #     print('nein')
-        #     #     pass
      
-        # # Bad solution... but works
-        def cbox_1_g():print_table(1)
-        def cbox_2_g():print_table(2)
-        def cbox_3_g():print_table(3)
-        def cbox_4_g():print_table(4)
-        def cbox_5_g():print_table(5)
-        def cbox_6_g():print_table(6)
-        def cbox_7_g():print_table(7)
-        def cbox_8_g():print_table(8)
-        def cbox_9_g():print_table(9)
-        def cbox_10_g():print_table(10)
-        def cbox_11_g():print_table(11)
-        def cbox_12_g():print_table(12)
-        def cbox_13_g():print_table(13)
-
-        dlg.comboBox_1.currentIndexChanged.connect(cbox_1_g)
-        dlg.comboBox_2.currentIndexChanged.connect(cbox_2_g)
-        dlg.comboBox_3.currentIndexChanged.connect(cbox_3_g)       
-        dlg.comboBox_4.currentIndexChanged.connect(cbox_4_g)
-        dlg.comboBox_5.currentIndexChanged.connect(cbox_5_g)
-        dlg.comboBox_6.currentIndexChanged.connect(cbox_6_g)
-        dlg.comboBox_7.currentIndexChanged.connect(cbox_7_g)
-        dlg.comboBox_8.currentIndexChanged.connect(cbox_8_g)
-        dlg.comboBox_9.currentIndexChanged.connect(cbox_9_g)
-        dlg.comboBox_10.currentIndexChanged.connect(cbox_10_g)
-        dlg.comboBox_11.currentIndexChanged.connect(cbox_11_g)
-        dlg.comboBox_12.currentIndexChanged.connect(cbox_12_g)
-        dlg.comboBox_13.currentIndexChanged.connect(cbox_13_g)
- 
-
         dlg.pushButtonUpdate.clicked.connect(self.reset_surface_editor)
+
+        def generate_element():
+            # self.write_to_db(Type, veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr)
+            db_path = self.plugin_dir + '/database_copy.xlsx'  
+
+            Type, veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr = self.read_db()
+            table_dict,table_dict_ID,table_dict_pd,dict_str_var,dict_gen_type = self.get_dicts(veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr)
+
+            # Nonveg or veg or water?
+            surface = dlg.comboBoxSurface.currentText()
+
+            table = table_dict_pd[surface]
+            fill_table = pd.read_excel(db_path, sheet_name= table.name, index_col= 'ID')
+
+            col_list = list(table)
+            remove_cols = ['ID', 'Surface', 'Color', 'Origin', 'Type']
+            for col in remove_cols:
+                try:
+                    col_list.remove(col)
+                except:
+                    pass
+
+            dict_reclass = {
+                'ID' : str(table_dict_ID[surface] + str(int(round(time.time())))),
+                'Surface' : surface,
+                'Origin' : str(dlg.textEditLoc.toPlainText()),
+                'Type' : str(dlg.textEditType.toPlainText()),
+            }
+
+            # if nonveg == True:
+            #     add color? 
+
+            for i in range(len(col_list)):
+                # Left side
+                Oc = eval('dlg.textBrowser_' + str(i))
+                oldField = Oc.toPlainText()
+                vars()['dlg.textBrowser_' + str(i)] = Oc
+                # Right Side
+                Nc = eval('dlg.comboBox_' + str(i))
+                sel_att = Nc.currentText()
+
+                table = table_dict_pd[oldField]
+                # table.set_index('ID')
+
+                descOrigin_list = []
+                for i in range(len(table)):
+                    descOrigin_list.append(str(table['Description'].iloc[i]) + ', ' + str(table['Origin'].iloc[i]))
+
+                table['descOrigin'] = descOrigin_list
+                sel_att = sel_att.split(':')[1] # Remove number added for interpretation in GUI
+                newField = table[table['descOrigin'] == sel_att].index.item()
+                
+                dict_reclass[table_dict_ID[oldField]] = newField
+
+                    
+            
+            df_new_edit = pd.DataFrame(dict_reclass, index = [0]).set_index('ID')
+    
+            if surface == 'Paved' or surface == 'Building' or surface == 'Bare Soil':
+                nonveg = nonveg.append(df_new_edit)
+            elif surface == 'Water':
+                water = water.append(df_new_edit)
+            else:
+                veg = veg.append(df_new_edit)
+            
+            # Write to db
+            self.write_to_db(Type, veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr)
+            print('veg?' , veg)
+
+        dlg.pushButtonGen.clicked.connect(generate_element)
+
 
     def highlight(self, table, idx, column):
         highlight = pd.Series(data = False, index = table.index)
         highlight[column] = table.loc[column] == idx
         return ['background-color:  #aeff88' if highlight.any() else '' for x in highlight]
-
-
         # alb.reset_index().style.apply(self.highlight, idx = 'Alb5', column=['ID'], axis=1)
 
     def reset_surface_editor(self):
@@ -1066,8 +985,6 @@ class Urban_type_creator(object):
 
 
 
-
-        
 
     #################################################################################################
     #                                                                                               #
@@ -1100,10 +1017,7 @@ class Urban_type_creator(object):
         dlg.comboBoxRef.clear()
         
         Type, veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr = self.read_db()
-
-
-        table_dict,table_dict_ID,table_dict_pd,dict_str_var = self.get_dicts(veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr)
-
+        table_dict,table_dict_ID,table_dict_pd,dict_str_var,dict_gen_type = self.get_dicts(veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr)
 
         rev_table_dict = dict((v, k) for k, v in table_dict.items())
 
@@ -1206,7 +1120,7 @@ class Urban_type_creator(object):
             db_path = self.plugin_dir + '/database_copy.xlsx'  
             Type, veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr = self.read_db()
 
-            table_dict,table_dict_ID,table_dict_pd,dict_str_var = self.get_dicts(veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr)
+            table_dict,table_dict_ID,table_dict_pd,dict_str_var,dict_gen_type= self.get_dicts(veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr)
 
 
             table = table_dict_pd[str(dlg.comboBoxTableSelect.currentText())]
@@ -1389,7 +1303,17 @@ class Urban_type_creator(object):
             'Dr': dr
             }
         
-        return table_dict,table_dict_ID,table_dict_pd,dict_str_var
+        dict_gen_type = {
+            'Paved' : 'NonVeg',
+            'Building' : 'NonVeg',
+            'Evergreen Tree' : 'Veg',
+            'Decidous Tree' : 'Veg',
+            'Grass' : 'Veg',
+            'Bare Soil' : 'NonVeg',
+            'Water' : 'NonVeg', # WATER            
+        }
+        
+        return table_dict,table_dict_ID,table_dict_pd,dict_str_var, dict_gen_type
 
     def reset_DB_editor(self):
         self.setup_tabs()
@@ -1421,71 +1345,7 @@ class Urban_type_creator(object):
     #         self.first_start = False
     #         self.dlg = Urban_type_creatorDialog()
 
-    #    # Use or not ? 
-        
-    #     self.dlg.comboBoxField.clear()
-    #     self.dlg.comboBoxField.setCurrentIndex(-1)
-    #     self.dlg.comboBoxField.setDisabled(True)
-    #     self.dlg.comboBoxType.clear()
-    #     self.dlg.textBrowser.clear()
-    #     self.dlg.textOutput.clear()
-    #     self.dlg.Qlabel.clear()
-        
-    #     self.layerComboManagerPoint = self.dlg.comboBoxVector
-    #     self.layerComboManagerPoint.setCurrentIndex(-1)
-    #     self.layerComboManagerPoint.setFilters(QgsMapLayerProxyModel.PolygonLayer)
-    #     #self.layerComboManagerPoint.setFixedWidth(250)
-
-    #     self.layerComboManagerPointField = self.dlg.comboBoxField
-    #     self.layerComboManagerPointField.setFilters(QgsFieldProxyModel.AllTypes)
-    #     # self.layerComboManagerPointField.setFixedWidth(250)
-    #     self.layerComboManagerPoint.layerChanged.connect(self.layerComboManagerPointField.setLayer)
-    #     self.layerComboManagerPointField.setEnabled(True)
-    #     # tf().timezone_at(lng=x, lat=y)
-
-    #     # x = vectorlayer.to_crs("EPSG:4326").loc[0:0].representative_point().x.item()
-    #     # y = vectorlayer.to_crs("EPSG:4326").loc[0:0].representative_point().y.item()
-        
-    #     # Set up for the Help button
-    #     self.dlg.helpButton_2.clicked.connect(self.typeInfo)
-
-    #     # Set up for the run button
-    #     self.dlg.runButton.clicked.connect(self.start_progress)
-
-    #     self.dlg.comboBoxField.fieldChanged.connect(self.field_changed) 
-
-    #      # Set up of file save dialog
-    #     self.fileDialog = QFileDialog()
-    #     self.dlg.pushButtonSave.clicked.connect(self.savefile)
-
-
-
-        # Read Database 
- #       db = pd.read_csv(r'C:\Script\NGEO306\GHSL\UrbanTypes.txt', sep= '\t')
-        # db_path = self.plugin_dir + '/database_copy.xlsx'
-        # db = pd.read_excel(db_path, sheet_name= 'Lod1_Types', index_col=  'ID')
-
-        # type_list = []
-        # for i in range(len(db)):
-        #     type_list.append(str(db['Type'].iloc[i]) + ', ' + str(db['Origin'].iloc[i]))
-        # db['type_location'] = type_list
-
-        # self.dlg.comboBoxType.addItems(sorted(type_list)) 
-        # self.dlg.comboBoxType.setCurrentIndex(-1)
-
-        # for i in range(1,14):
-        #     Ls = eval('self.dlg.comboBoxClass' + str(i))
-        #     Ls.clear()
-        #     vars()['self.dlg.comboBoxClass' + str(i)] = Ls
-
-        #     Rs = eval('self.dlg.comboBoxNew' + str(i))
-        #     Rs.clear()
-        #     Rs.addItems(sorted(type_list))
-        #     Rs.setCurrentIndex(-1)
-        #     vars()['self.dlg.comboBoxNew' + str(i)] = Rs
-
-
-        
+ 
 
         # pixmap = QPixmap(r'C:\Script\NGEO306\urban_type_creator\image.JPG')
 
