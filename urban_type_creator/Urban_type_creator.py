@@ -867,7 +867,7 @@ class Urban_type_creator(object):
                     pass
             # Clear ComboBoxes 
 
-            for i in range(len(col_list)): # Range needs to be fixed...
+            for i in range(len(col_list)): 
                           
                 Oc = eval('dlg.textBrowser_' + str(i))
                 Oc.setEnabled(True)
@@ -877,7 +877,8 @@ class Urban_type_creator(object):
                 # Nc = Combobox with selectable table rows
                 Nc = eval('dlg.comboBox_' + str(i))
                 Nc.setEnabled(True)
-
+                
+                # Assign correct tab
                 try:
                     table_name_str = rev_table_dict[col_list[i]]
                 except:
@@ -932,8 +933,6 @@ class Urban_type_creator(object):
             table_id = eval('dlg.comboBox_' + str(idx))
             vars()['dlg.comboBox_' + str(idx)] = table_id
             table_id = table_id.currentText()
-     
-        dlg.pushButtonUpdate.clicked.connect(self.reset_surface_editor)
 
         def generate_element():
             # self.write_to_db(Type, veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr)
@@ -997,12 +996,15 @@ class Urban_type_creator(object):
             # Write to db
             self.write_to_db(Type, veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr)
 
+            QMessageBox.information(None, "Sucessful",'Element Added')
+
+
         dlg.pushButtonGen.clicked.connect(generate_element)
+        dlg.pushButtonGen.clicked.connect(self.reset_surface_editor)
 
     def reset_surface_editor(self):
         self.setup_tabs()
         self.dlg.tabWidget.setCurrentIndex(2)
-        QMessageBox.information(None, "Sucessful",'Database Updated')
 
 
 
@@ -1024,20 +1026,17 @@ class Urban_type_creator(object):
         #     self.first_start = False
         #     self.dlg = urban_type_db_editorDialog()
         
-        for i in range(2,15):
-            # Oc == Old Class
+        for i in range(0,10):
             Oc = eval('dlg.textBrowser_' + str(i))
             Oc.clear()
-            # Oc.setHidden(True)
-            vars()['dlg.textBrowser_' + str(i)] = Oc
+            Oc.setDisabled(True)
 
             Nc = eval('dlg.textEdit_Edit_' + str(i))
             Nc.clear()
-            # Nc.setHidden(True)
-            vars()['dlg.textEdit_Edit_' + str(i)] = Nc
+            Nc.setDisabled(True)
         
-        dlg.comboBoxTableSelect.clear()
-        dlg.comboBoxRef.clear()
+        # dlg.comboBoxTableSelect.clear()
+        # dlg.comboBoxRef.clear()
         
         Type, veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr = self.read_db()
         table_dict,table_dict_ID,table_dict_pd,dict_str_var,dict_gen_type = self.get_dicts(veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr)
@@ -1059,46 +1058,37 @@ class Urban_type_creator(object):
 
             # Clear ComboBoxes
             dlg.textBrowserDf.clear()
-            for i in range(2,15):
+            for i in range(0,10):
                 # Oc == Old Class
                 Oc = eval('dlg.textBrowser_' + str(i))
                 Oc.clear()
                 Oc.setDisabled(True)
-                # Oc.setHidden(True)
-                vars()['dlg.textBrowser_' + str(i)] = Oc
-
+   
                 Nc = eval('dlg.textEdit_Edit_' + str(i))
                 Nc.clear()
-                # Nc.setHidden(True)
-                vars()['dlg.textEdit_Edit_' + str(i)] = Nc
+                Nc.setDisabled(True)
 
             try:
                 table = table_dict_pd[str(table_name)]
                 col_list = list(table)
                 
-                columns_to_remove = ['General Type', 'Surface', 'Ref']
+                columns_to_remove = ['General Type', 'Surface', 'Description','Origin','Ref', 'Reference']
 
                 for remove in columns_to_remove:
-                    col_list.remove(remove)
+                    try:
+                        col_list.remove(remove)
+                    except:
+                        pass
 
                 len_list = len(col_list)
-
-                idx = 2
-                for i in range(len_list):
-                    if idx > 13:
-                        break 
-                    # Left side
+                for idx in range(len_list):
                     Oc = eval('dlg.textBrowser_' + str(idx))
-                    # Oc.setVisible(True)
                     Oc.setEnabled(True)
-                    Oc.setText(str(col_list[i]))
-                    vars()['dlg.textBrowser_' + str(idx)] = Oc
+                    Oc.setText(str(col_list[idx]))
 
                     Nc = eval('dlg.textEdit_Edit_' + str(idx))
-                    # Nc.setEnabled(True)
-                    Nc.setVisible(True)
-                    vars()['dlg.textEdit_Edit_' + str(idx)] = Nc
-                    idx = idx+1
+                    Nc.setEnabled(True)
+
                 
                 if dlg.comboBoxTableSelect.currentText() == 'Leaf Area Index' or dlg.comboBoxTableSelect.currentText() == 'Leaf Growth Power':
                     dlg.comboBoxSurface.clear()
@@ -1177,34 +1167,41 @@ class Urban_type_creator(object):
             
             self.write_to_db(Type, veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr)
 
+            QMessageBox.information(None, "Sucessful",'Reference Added')
+
+
 
 
         def add_table():
 
-            db_path = self.plugin_dir + '/database_copy.xlsx'
             Type, veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr = self.read_db()
 
             table_dict,table_dict_ID,table_dict_pd,dict_str_var,dict_gen_type= self.get_dicts(veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr)
 
 
             table = table_dict_pd[str(dlg.comboBoxTableSelect.currentText())]
-            fill_table = pd.read_excel(db_path, sheet_name= table.name, index_col= 'ID')
 
             col_list = list(table)
+            
+            columns_to_remove = ['General Type', 'Surface', 'Description','Origin','Ref','Reference']
+
+            for remove in columns_to_remove:
+                try:
+                    col_list.remove(remove)
+                except:
+                    pass
+
             len_list = len(col_list)
 
-            idx = 1
             dict_reclass = {
                 'ID' : str(table_dict_ID[str(dlg.comboBoxTableSelect.currentText())] + str(int(round(time.time())))),
                 'General Type' : dict_gen_type[dlg.comboBoxSurface.currentText()],
-                'Surface' : dlg.comboBoxSurface.currentText()
+                'Surface' : dlg.comboBoxSurface.currentText(), 
+                'Description' : dlg.textEditDesc.value(),
+                'Origin' : dlg.textEditOrig.value()
             }
         
-            idx = 2
-
-            for i in range(len_list-1):
-                if idx > 13:
-                    break 
+            for idx in range(len_list):
                 # Left side
                 Oc = eval('dlg.textBrowser_' + str(idx))
                 oldField = Oc.toPlainText()
@@ -1215,7 +1212,6 @@ class Urban_type_creator(object):
                 vars()['dlg.textEdit_Edit_' + str(idx)] = Nc
                 dict_reclass[oldField] =  [newField]
 
-                idx += 1
             
             dict_reclass['Ref'] = ref[ref['authoryear'] ==  dlg.comboBoxRef.currentText()].index.item() 
             
@@ -1244,6 +1240,8 @@ class Urban_type_creator(object):
             
             # Write to db
             self.write_to_db(Type, veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr)
+
+            QMessageBox.information(None, "Sucessful",'Edit Added')
     
         def checker():
             var = dlg.comboBoxTableSelect.currentText()
@@ -1272,8 +1270,9 @@ class Urban_type_creator(object):
 
         dlg.pushButtonCheck.clicked.connect(checker)
         dlg.pushButtonGen.clicked.connect(add_table)
+        dlg.pushButtonGen.clicked.connect(self.reset_DB_editor)
         dlg.pushButtonAddRef.clicked.connect(add_reference)
-        dlg.pushButtonUpdate.clicked.connect(self.reset_DB_editor)
+        dlg.pushButtonAddRef.clicked.connect(self.reset_DB_editor)
 
     def read_db(self):
         db_path = self.plugin_dir + '/database_copy.xlsx'  
@@ -1330,7 +1329,6 @@ class Urban_type_creator(object):
 
             writer.save()
 
-            QMessageBox.information(None, "Sucessful",'Edit Successfully pushed to Database')
 
     def get_dicts(self,veg, nonveg, bsoil, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr):
 
@@ -1354,6 +1352,10 @@ class Urban_type_creator(object):
             'Conductance': 'Cnd',
             'Leaf Growth Power': 'LGP',
             'Drainage': 'Dr',
+            'OHM Summer Wet': 'OHMSummerWet' ,	
+            'OHM Summer Dry': 'OHMSummerDry',
+            'OHM Winter Wet': 'OHMWinterWet',
+            'OHM Winter Dry': 'OHMWinterDry',
             'Evergreen Tree' : 'Veg',
             'Decidous Tree' : 'Veg',
             'Grass' : 'Veg',
@@ -1365,6 +1367,10 @@ class Urban_type_creator(object):
         table_dict_pd = {
             'Emissivity': em,
             'OHM': OHM,
+            'OHM Summer Wet': OHM ,	
+            'OHM Summer Dry': OHM ,
+            'OHM Winter Wet': OHM ,
+            'OHM Winter Dry': OHM ,
             'Albedo': alb,
             'Leaf Area Index': LAI,
             'Water Storage': st,
@@ -1406,7 +1412,6 @@ class Urban_type_creator(object):
     def reset_DB_editor(self):
         self.setup_tabs()
         self.dlg.tabWidget.setCurrentIndex(3)
-        QMessageBox.information(None, "Sucessful",'Database Updated')
 
     def run(self):
         """Run method that performs all the real work"""

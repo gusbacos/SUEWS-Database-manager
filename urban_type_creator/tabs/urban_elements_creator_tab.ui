@@ -407,16 +407,6 @@ p, li { white-space: pre-wrap; }
        </widget>
       </item>
       <item row="2" column="0">
-       <widget class="QPushButton" name="pushButtonUpdate">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="text">
-         <string>Update Database</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0">
        <widget class="QPushButton" name="pushButtonCancel">
         <property name="text">
          <string>Close</string>
