@@ -1,5 +1,0 @@
-<RCC>
-    <qresource prefix="/plugins/Urban_type_creator" >
-        <file>icon.png</file>
-    </qresource>
-</RCC>

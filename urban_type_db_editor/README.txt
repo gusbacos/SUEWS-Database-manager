@@ -1,7 +1,7 @@
 Plugin Builder Results
 
-Your plugin urban_type_db_editor was created in:
-    C:/Script/NGEO306\urban_type_db_editor
+Your plugin Urban_type_creator was created in:
+    C:/Script/NGEO306\urban_type_creator
 
 Your QGIS plugin directory is located at:
     C:/Users/xbacos/AppData/Roaming/QGIS/QGIS3/profiles/default/python/plugins
@@ -17,11 +17,11 @@ What's Next:
 
   * Test the plugin by enabling it in the QGIS plugin manager
 
-  * Customize it by editing the implementation file: ``urban_type_db_editor.py``
+  * Customize it by editing the implementation file: ``Urban_type_creator.py``
 
   * Create your own custom icon, replacing the default icon.png
 
-  * Modify your user interface by opening urban_type_db_editor_dialog_base.ui in Qt Designer
+  * Modify your user interface by opening Urban_type_creator_dialog_base.ui in Qt Designer
 
   * You can use the Makefile to compile your Ui and resource files when
     you make changes. This requires GNU make (gmake)

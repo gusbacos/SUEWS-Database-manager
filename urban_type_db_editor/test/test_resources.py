@@ -9,8 +9,8 @@
 """
 
 __author__ = 'oskar.backlin@gu.se'
-__date__ = '2021-06-21'
-__copyright__ = 'Copyright 2021, Oskar Bäcklin University of Gothenburg'
+__date__ = '2021-05-20'
+__copyright__ = 'Copyright 2021, GU'
 
 import unittest
 
@@ -18,7 +18,7 @@ from qgis.PyQt.QtGui import QIcon
 
 
 
-class urban_type_db_editorDialogTest(unittest.TestCase):
+class Urban_type_creatorDialogTest(unittest.TestCase):
     """Test rerources work."""
 
     def setUp(self):
@@ -31,12 +31,12 @@ class urban_type_db_editorDialogTest(unittest.TestCase):
 
     def test_icon_png(self):
         """Test we can click OK."""
-        path = ':/plugins/urban_type_db_editor/icon.png'
+        path = ':/plugins/Urban_type_creator/icon.png'
         icon = QIcon(path)
         self.assertFalse(icon.isNull())
 
 if __name__ == "__main__":
-    suite = unittest.makeSuite(urban_type_db_editorResourcesTest)
+    suite = unittest.makeSuite(Urban_type_creatorResourcesTest)
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)
 

@@ -1,5 +1,5 @@
 <RCC>
-    <qresource prefix="/plugins/urban_type_db_editor" >
+    <qresource prefix="/plugins/Urban_type_creator" >
         <file>icon.png</file>
     </qresource>
 </RCC>

@@ -1,9 +1,9 @@
-.. urban_type_db_editor documentation master file, created by
+.. Urban_type_creator documentation master file, created by
    sphinx-quickstart on Sun Feb 12 17:11:03 2012.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to urban_type_db_editor's documentation!
+Welcome to Urban_type_creator's documentation!
 ============================================
 
 Contents:

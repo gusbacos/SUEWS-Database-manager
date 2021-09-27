@@ -1,11 +1,11 @@
 #/***************************************************************************
-# urban_type_db_editor
+# Urban_type_creator
 #
-# This plugin allows for edits in the SUEWS database
+# This plugin prepare suews lib data
 #							 -------------------
-#		begin				: 2021-06-21
+#		begin				: 2021-05-20
 #		git sha				: $Format:%H$
-#		copyright			: (C) 2021 by Oskar Bäcklin University of Gothenburg
+#		copyright			: (C) 2021 by GU
 #		email				: oskar.backlin@gu.se
 # ***************************************************************************/
 #
@@ -38,15 +38,15 @@ LOCALES =
 # translation
 SOURCES = \
 	__init__.py \
-	urban_type_db_editor.py urban_type_db_editor_dialog.py
+	Urban_type_creator.py Urban_type_creator_dialog.py
 
-PLUGINNAME = urban_type_db_editor
+PLUGINNAME = Urban_type_creator
 
 PY_FILES = \
 	__init__.py \
-	urban_type_db_editor.py urban_type_db_editor_dialog.py
+	Urban_type_creator.py Urban_type_creator_dialog.py
 
-UI_FILES = urban_type_db_editor_dialog_base.ui
+UI_FILES = Urban_type_creator_dialog_base.ui
 
 EXTRAS = metadata.txt icon.png
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# urban_type_db_editor documentation build configuration file, created by
+# Urban_type_creator documentation build configuration file, created by
 # sphinx-quickstart on Sun Feb 12 17:11:03 2012.
 #
 # This file is execfile()d with the current directory set to its containing dir.
@@ -40,8 +40,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'urban_type_db_editor'
-copyright = u'2013, Oskar Bäcklin University of Gothenburg'
+project = u'Urban_type_creator'
+copyright = u'2013, GU'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -178,8 +178,8 @@ htmlhelp_basename = 'TemplateClassdoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'urban_type_db_editor.tex', u'urban_type_db_editor Documentation',
-   u'Oskar Bäcklin University of Gothenburg', 'manual'),
+  ('index', 'Urban_type_creator.tex', u'Urban_type_creator Documentation',
+   u'GU', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -211,6 +211,6 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'TemplateClass', u'urban_type_db_editor Documentation',
-     [u'Oskar Bäcklin University of Gothenburg'], 1)
+    ('index', 'TemplateClass', u'Urban_type_creator Documentation',
+     [u'GU'], 1)
 ]
