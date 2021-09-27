@@ -402,12 +402,6 @@ class Urban_type_creator(object):
         self.layerComboManagerPoint.setCurrentIndex(-1)
         self.layerComboManagerPoint.setFilters(QgsMapLayerProxyModel.PolygonLayer)
 
-        # Set type info when changing type
-        dlg.comboBoxType.currentIndexChanged.connect(typeInfo)
-
-        # TODO fix changing the tab
-        # dlg.typeInfoButton.clicked.connect(# Go to tab 2 and have the type selected chosen in tab)
-
         # Set up for the run button
         dlg.runButton.clicked.connect(start_progress)
 
@@ -429,8 +423,8 @@ class Urban_type_creator(object):
             type_list.append(str(db['Type'].iloc[i]) + ', ' + str(db['Origin'].iloc[i]))
         db['type_Origin'] = type_list
 
-        dlg.comboBoxType.addItems(sorted(type_list)) 
-        dlg.comboBoxType.setCurrentIndex(-1)
+        dlg.comboBoxType.addItems(sorted(type_list))
+        dlg.comboBoxType.setCurrentIndex(-1) 
 
         for i in range(1,14):
             Ls = eval('dlg.comboBoxClass' + str(i))
@@ -442,6 +436,10 @@ class Urban_type_creator(object):
             Rs.addItems(sorted(type_list))
             Rs.setCurrentIndex(-1)
             vars()['dlg.comboBoxNew' + str(i)] = Rs
+
+        # Set type info when changing type
+        dlg.comboBoxType.currentIndexChanged.connect(typeInfo)
+
     
     
     #################################################################################################
@@ -510,8 +508,8 @@ class Urban_type_creator(object):
 
         def check_type():
 
-            def special_match(strg, search=re.compile(r'[^0-9.]').search):
-                return not bool(search(strg))
+            # def special_match(self.(strg, search=re.compile(r'[^0-9.]').search)):
+            #     return not bool(search(strg))
 
             db_path = self.plugin_dir + '/database_copy.xlsx'
             idx_col = 'ID'
@@ -641,7 +639,7 @@ class Urban_type_creator(object):
                 change_nonveg(dlg.comboBoxWallMtr, 'Building', 'Type', TypeID)
                 change_nonveg(dlg.comboBoxRoofMtr, 'Building', 'Type', TypeID)
                 change_nonveg(dlg.comboBoxPavedMtr, 'Paved', 'Type', TypeID)
-                change_soil(dlg.comboBoxBsoilType, 'Bare Soil', 'Type', TypeID)
+                # change_soil(dlg.comboBoxBsoilType, 'Bare Soil', 'Type', TypeID)
                 change_water(dlg.comboBoxWaterType, 'Type', TypeID)
             
             except:
@@ -1162,7 +1160,6 @@ class Urban_type_creator(object):
         dlg.comboBoxRef.currentIndexChanged.connect(ref_changed) 
 
         def add_reference():
-
             Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
 
             dict_reclass = {
@@ -1266,10 +1263,15 @@ class Urban_type_creator(object):
             QMessageBox.information(None, 'Sucessful','Edit Added')
     
         def checker():
+
+            def special_match(strg, search=re.compile(r'[^0-9.]').search):
+                return not bool(search(strg))
+
             var = dlg.comboBoxTableSelect.currentText()
             try:
-                    
-                if len(dlg.textEditDesc.value()) <1: 
+                if len(dlg.comboBoxSurface.currentText()) <1: 
+                    QMessageBox.warning(None, 'Surface Missing','Please select a surface')
+                elif len(dlg.textEditDesc.value()) <1: 
                     QMessageBox.warning(None, 'Description Missing','Please fill in the Description Box')
                 elif len(dlg.textEditOrig.value()) <1: 
                     QMessageBox.warning(None, 'Origin Missing','Please fill in the Origin Box')
@@ -1277,7 +1279,7 @@ class Urban_type_creator(object):
                     QMessageBox.warning(None, 'Reference Missing','Please select a reference')
             except:
                 pass 
-
+            
             table = table_dict_pd[str(dlg.comboBoxTableSelect.currentText())]
 
             col_list = list(table)
@@ -1300,6 +1302,7 @@ class Urban_type_creator(object):
 
             len_list = len(col_list)
             col_list =['General Type', 'Surface']
+
             for idx in range(len_list):
                 # Left side
                 Oc = eval('dlg.textBrowser_' + str(idx))
@@ -1307,65 +1310,83 @@ class Urban_type_creator(object):
                 vars()['dlg.textBrowser_' + str(idx)] = Oc
                 # Right Side
                 Nc = eval('dlg.textEdit_Edit_' + str(idx))
+
+                if(len(Nc.value())) <1:
+                    QMessageBox.warning(None, oldField + ' Missing','Enter value for ' + oldField)
+                    break
+
+                if Oc.toPlainText() != 'Season':
+                    if  special_match(Nc.value()) == False:
+                        QMessageBox.warning(None, oldField + ' Error','Invalid characters in ' + oldField + '\nOnly 0-9 and . are allowed')
+                        break
+
                 try:
                     newField = float(Nc.value())
                     vars()['dlg.textEdit_Edit_' + str(idx)] = Nc
                     dict_reclass[oldField] =  [newField]
                     col_list.append(Oc.toPlainText())
-              
+
                     dict_reclass['Ref'] = ref[ref['authoryear'] ==  dlg.comboBoxRef.currentText()].index.item() 
                     df_new_edit = pd.DataFrame(dict_reclass)
                     col_list.append('Ref')
 
                     row = len(table.index)
                     col = len(table[col_list].columns)
-                    for i in range(row):
-                        checker = 0
-                        # a = table[col_list].iloc[i].tolist()
-                        # b = 
-                        for j in range(col):
-                            if table[col_list].iloc[i].tolist()[j] == df_new_edit.iloc[0].tolist()[j]:
-                                checker = checker+1
-                        if checker == col:
-                            QMessageBox.information(None, 'Information',
-                                'Another entry in the database with same Values and Referece is found in the Database' +
-                                '\n\n[ ' +  str(table.loc[table.index[i], 'Description']) + ', ' + str(table.loc[table.index[i], 'Origin']) + 
-                                ', ' + str(table.loc[table.index[i], 'Reference'] + ' ]' +
-                                '\n\nYou are able to add the entry if you  think this is different from what already exist in the database!'))
+
+                    try:
+                        if var == 'Albedo':
+                            if float(dlg.textEdit_Edit_0.value()) < 0 or float(dlg.textEdit_Edit_0.value()) > 1:
+                                QMessageBox.warning(None, 'Albedo Min error','Alb_min must be between 0-1')
+                                break
+                            elif float(dlg.textEdit_Edit_1.value()) < 0 or float(dlg.textEdit_Edit_1.value()) > 1:
+                                QMessageBox.warning(None, 'Albedo Max error','Alb_max must be between 0-1')
+                                break
+                            elif float(dlg.textEdit_Edit_0.value()) > float(dlg.textEdit_Edit_1.value()):
+                                QMessageBox.warning(None, 'Value error', dlg.textBrowser_0.toPlainText() + ' must be smaller or equal to ' + dlg.textBrowser_1.toPlainText())
+                                break
+
+                        elif var == 'Leaf Area Index':
+                            if float(dlg.textEdit_Edit_0.value()) != 0 or float(dlg.textEdit_Edit_0.value()) != 1:
+                                QMessageBox.warning(None, 'LAI Equation error','LAIeq choices are 0 or 1')
+                                break
+                            elif float(dlg.textEdit_Edit_1.value()) < 0 or float(dlg.textEdit_Edit_1.value()) > 1:
+                                QMessageBox.warning(None, 'LAImin error','LAImin must be between 0-1')
+                                break
+                            elif float(dlg.textEdit_Edit_2.value()) < 0 or float(dlg.textEdit_Edit_2.value()) > 1:
+                                QMessageBox.warning(None, 'LAImax error','LAImax must be between 0-1')
+                                break
+                            elif float(dlg.textEdit_Edit_1.value()) > float(dlg.textEdit_Edit_2.value()):
+                                QMessageBox.warning(None, 'Value error', dlg.textBrowser_1.toPlainText() + ' must be smaller or equal to ' + dlg.textBrowser_2.toPlainText())
+                                break
+
+                        elif var == 'Porosity':
+                            if float(dlg.textEdit_Edit_0.value()) > float(dlg.textEdit_Edit_1.value()):
+                                QMessageBox.warning(None, 'Value error', dlg.textBrowser_0.toPlainText() + ' must be smaller or equal to ' + dlg.textBrowser_1.toPlainText())
+                                break
+
+                        elif var == 'Emissivity':
+                            if float(dlg.textEdit_Edit_0.value()) < 0 or float(dlg.textEdit_Edit_0.value()) > 1:
+                                QMessageBox.warning(None, 'Emissivity error','Emissivity must be between 0-1')
+                                break
+
+                        for i in range(row):
+                            checker = 0
+                            for j in range(col):
+                                if table[col_list].iloc[i].tolist()[j] == df_new_edit.iloc[0].tolist()[j]:
+                                    checker = checker+1
+                            if checker == col:
+                                QMessageBox.information(None, 'Information',
+                                    'Another entry in the database with same Values and Referece is found in the Database' +
+                                    '\n\n[ ' +  str(table.loc[table.index[i], 'Description']) + ', ' + str(table.loc[table.index[i], 'Origin']) + 
+                                    ', ' + str(table.loc[table.index[i], 'Reference'] + ' ]' +
+                                    '\n\nYou are able to add the entry if you  think this is different from what already exist in the database!'))
+                    
+                        QMessageBox.information(None, 'Succesful', 'Your edit is compatible! Press Add Table to add it to your local database')
+                        dlg.pushButtonGen.setEnabled(True)
+                    except:
+                        pass
                 except:
-                    QMessageBox.warning(None, oldField + ' Missing','Enter value for ' + oldField)
-                
-            if var == 'Albedo':
-                if float(dlg.textEdit_Edit_0.value()) < 0 or float(dlg.textEdit_Edit_0.value()) > 1:
-                    QMessageBox.warning(None, 'Albedo Min error','Alb_min must be between 0-1')
-                elif float(dlg.textEdit_Edit_1.value()) < 0 or float(dlg.textEdit_Edit_1.value()) > 1:
-                    QMessageBox.warning(None, 'Albedo Max error','Alb_max must be between 0-1')
-                elif float(dlg.textEdit_Edit_0.value()) > float(dlg.textEdit_Edit_1.value()):
-                    QMessageBox.warning(None, 'Value error', dlg.textBrowser_0.toPlainText() + ' must be smaller or equal to ' + dlg.textBrowser_1.toPlainText())
-
-            elif var == 'Leaf Area Index':
-                if float(dlg.textEdit_Edit_0.value()) == 0 or float(dlg.textEdit_Edit_0.value()) == 1:
                     pass
-                else:
-                    QMessageBox.warning(None, 'LAI Equation error','LAIeq choices are 0 or 1')
-                
-                if float(dlg.textEdit_Edit_1.value()) < 0 or float(dlg.textEdit_Edit_1.value()) > 1:
-                    QMessageBox.warning(None, 'LAImin error','LAImin must be between 0-1')
-                elif float(dlg.textEdit_Edit_2.value()) < 0 or float(dlg.textEdit_Edit_2.value()) > 1:
-                    QMessageBox.warning(None, 'LAImax error','LAImax must be between 0-1')
-                elif float(dlg.textEdit_Edit_1.value()) > float(dlg.textEdit_Edit_2.value()):
-                    QMessageBox.warning(None, 'Value error', dlg.textBrowser_1.toPlainText() + ' must be smaller or equal to ' + dlg.textBrowser_2.toPlainText())
-
-            elif var == 'Porosity':
-                 if float(dlg.textEdit_Edit_0.value()) > float(dlg.textEdit_Edit_1.value()):
-                    QMessageBox.warning(None, 'Value error', dlg.textBrowser_0.toPlainText() + ' must be smaller or equal to ' + dlg.textBrowser_1.toPlainText())
-
-            elif var == 'Emissivity':
-                if float(dlg.textEdit_Edit_0.value()) < 0 or float(dlg.textEdit_Edit_0.value()) > 1:
-                    QMessageBox.warning(None, 'Emissivity error','Emissivity must be between 0-1')
-
-            else: 
-                QMessageBox.information(None, 'Succesful', 'Your edit is compatible! Press Add Table to add it to your local database')
   
 
             # elif var == 'OHM'
