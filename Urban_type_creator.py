@@ -21,7 +21,8 @@
  *                                                                         *
  ***************************************************************************/
 '''
-from numpy import typecodes
+from os import stat_result
+from pandas.core.indexes import base
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon, QPixmap
 from qgis.PyQt.QtWidgets import QFileDialog, QAction, QMessageBox
@@ -407,7 +408,6 @@ class Urban_type_creator(object):
 
         dlg.comboBoxVector.currentIndexChanged.connect(layer_changed)
         dlg.comboBoxField.currentIndexChanged.connect(field_changed) 
- 
 
          # Set up of file save dialog
         self.fileDialog = QFileDialog()
@@ -455,47 +455,11 @@ class Urban_type_creator(object):
             self.first_start = False
             self.dlg = urban_type_editorDialog()
 
-        # Clear 
-        dlg.comboBoxType.clear()
-        # line edits
-        dlg.TypeLineEditName.clearValue()
-        dlg.TypeLineEditLocation.clearValue()
-        dlg.TypeLineEditDesc.clearValue()
-        # Building
-        dlg.comboBoxWallMtr.clear()
-        dlg.comboBoxWallClr.clear()  
-        dlg.textBrowserWallFrom.clear()
-  
-        dlg.comboBoxRoofMtr.clear()
-        dlg.comboBoxRoofClr.clear()
-        dlg.textBrowserRoofFrom.clear()
-
-        # Paved
-        dlg.comboBoxPavedMtr.clear()
-        dlg.comboBoxPavedClr.clear()
-        dlg.textBrowserPavedFrom.clear()
-
-        # Vegetation
-        dlg.comboBoxEvrType.clear()
-        dlg.textBrowserEvrFrom.clear()
-        dlg.comboBoxDecType.clear()
-        dlg.textBrowserDecFrom.clear()
-        dlg.comboBoxGrassType.clear()
-        dlg.textBrowserGrassFrom.clear()
-
-        # Bare Soil
-        dlg.comboBoxBsoilType.clear()
-        dlg.textBrowserBsoilFrom.clear()
-
-        # Water
-        dlg.comboBoxWaterType.clear()
-        dlg.textBrowserWaterFrom.clear()
-
-        db_path = self.plugin_dir + '/database_copy.xlsx'
-        idx_col = 'ID'
-        idx=-1
-
-        Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
+        db_path = self.plugin_dir + '/database_copy.xlsx'  
+        Type = pd.read_excel(db_path, sheet_name = 'Lod1_Types', index_col=  'ID', engine = 'openpyxl')
+        veg = pd.read_excel(db_path, sheet_name = 'Lod2_Veg', index_col = 'ID', engine = 'openpyxl')
+        nonveg = pd.read_excel(db_path, sheet_name = 'Lod2_NonVeg', index_col = 'ID', engine = 'openpyxl')
+        water = pd.read_excel(db_path, sheet_name = 'Lod2_Water', index_col = 'ID', engine = 'openpyxl')
 
         # Add available types to combobox
         type_list = []
@@ -503,235 +467,146 @@ class Urban_type_creator(object):
             type_list.append(str(Type['Type'].iloc[i]) + ', ' + str(Type['Origin'].iloc[i]))
         Type['type_origin'] = type_list
 
-        dlg.comboBoxType.addItems(sorted(type_list)) 
-        dlg.comboBoxType.setCurrentIndex(-1)
+        dlg.comboBoxTableSelect.addItems(sorted(type_list)) 
+        dlg.comboBoxTableSelect.setCurrentIndex(-1)
 
         def check_type():
 
-            # def special_match(self.(strg, search=re.compile(r'[^0-9.]').search)):
-            #     return not bool(search(strg))
-
             db_path = self.plugin_dir + '/database_copy.xlsx'
             idx_col = 'ID'
 
-            Type = pd.read_excel(db_path, sheet_name= 'Lod1_Types', index_col=  idx_col)
+            Type = pd.read_excel(db_path, sheet_name = 'Lod1_Types', index_col = idx_col, engine = 'openpyxl')
 
             # Name
-            if dlg.TypeLineEditName.value().startswith('test'):
-                QMessageBox.warning(None, 'Error in Name','Please, don´t use test as type name..')
-            elif dlg.TypeLineEditName.value().startswith('Test'):
-                QMessageBox.warning(None, 'Error in Name','Please, don´t use test as type name..')
-            elif dlg.TypeLineEditName.value() in Type['Type'].tolist():
-                QMessageBox.warning(None, 'Error in Name','The suggested type name is already taken.')
-            elif dlg.TypeLineEditName.isNull():
+            if dlg.textEditName.isNull():
                 QMessageBox.warning(None, 'Error in Name','Enter a name for new type')
-
+            elif dlg.textEditName.value().startswith('test'):
+                QMessageBox.warning(None, 'Error in Name','Please, don´t use test as type name..')
+            elif dlg.textEditName.value().startswith('Test'):
+                QMessageBox.warning(None, 'Error in Name','Please, don´t use test as type name..')
+            elif dlg.textEditName.value() in Type['Type'].tolist():
+                QMessageBox.warning(None, 'Error in Name','The suggested type name is already taken.')
+    
             # Origin
-            elif dlg.TypeLineEditLocation.isNull():
+            elif dlg.textEditOrig.isNull():
                 QMessageBox.warning(None, 'Error in Origin','Enter a Origin for new type')
-
-            # # Soil Depth soildepth
-            # elif dlg.lineEditBsoilDepth.isNull():
-            #     QMessageBox.warning(None, 'Errorin Soil Depth','Enter Soil Depth')
-
-            # # Fix to only allow for decimals
-            # elif special_match(dlg.lineEditBsoilDepth.value()) == False:
-            #     QMessageBox.warning(None, 'Error in Soil Depth','Invalid characters in Soil Depth! \nOnly 0-9 and . are allowed')
-
-            # elif len(self.dlg.lineEditBsoilDepth.value())>0:
-                # try:
-                #     float(self.dlg.lineEditBsoilDepth.value())
-                #     QMessageBox.warning(None, 'Error in Soil Depth','Good Job')
-                
-                # except:
-                #     QMessageBox.warning(None, 'Error in Soil Depth','Invalid characters in Soil Depth! \nOnly 0-9 and . are allowed')
-                
-            # elif dlg.lineEditBsoilDepth.value().count('.') > 1:
-            #     QMessageBox.warning(None, 'Error in Soil Depth','To many separators in Soil Depth')
 
             # Final - When all is Checked 
             else:
-                QMessageBox.information(None, 'Check Complete', 'Your type is compatible with the SUEWS-Database!\nPress Generate Type to add to Database')
-                dlg.genButton.setEnabled(True)
+                QMessageBox.information(None, 'Check Complete', 'Your type is compatible with the SUEWS-Database!\nPress Generate Type to add to your local Database')
+                dlg.pushButtonGen.setEnabled(True)
 
         def generate_type():
-            db_path = self.plugin_dir + '/database_copy.xlsx'
-            idx_col = 'ID'
 
             Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
             table_dict,table_dict_ID,table_dict_pd,dict_str_var, dict_gen_type = self.get_dicts(veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
 
-
-            new_type_dict = {
-                'ID' : len(Type)+1,
-                'Origin' : dlg.TypeLineEditLocation.value(),
-                'Type' :  dlg.TypeLineEditName.value(),
-                'Default' : 'N',
-                'Description': dlg.TypeLineEditDesc.value(),
-                'Period' : 'testyear',
+            dict_reclass = {
+                'ID' : str('Type' + str(int(round(time.time())))),
+                'Origin' : str(dlg.textEditOrig.value()),
+                'Type' : str(dlg.textEditName.value()),
+                'Description': dlg.textEditDesc.value(),
+                'Period' : dlg.textEditPeriod.value(),
                 'Url' : '', 
                 'Author' : 'SUEWS',
-                'Grass' : veg.index[veg['Type'] == dlg.comboBoxGrassType.currentText()].item(),
-                'Decidous Tree' : veg.index[veg['Type'] == dlg.comboBoxDecType.currentText()].item(),
-                'Evergreen Tree' : veg.index[veg['Type'] == dlg.comboBoxEvrType.currentText()].item(),
-                'Building' : 'NonVeg1',
-                'Paved' : 'NonVeg2'
-                }      
+            }
 
-            Type = Type.append(pd.DataFrame.from_dict([new_type_dict]).set_index('ID'))
+            cbox_list = [dlg.comboBoxPavedType, dlg.comboBoxBuildingType, dlg.comboBoxGrassType, dlg.comboBoxDecType, dlg.comboBoxEvrType,dlg.comboBoxBsoilType, dlg.comboBoxWaterType]
+            cbox_table_list = [nonveg, nonveg, veg, veg, veg, nonveg, water]
+            dict_label = ['Paved', 'Building', 'Grass', 'Decidous Tree', 'Evergreen Tree', 'Bare Soil', 'Water']
 
+            for cbox, surf_table, label in zip(cbox_list, cbox_table_list, dict_label):
+                merge_list = []
+                for i in range(len(surf_table)):
+                    merge_list.append(str(surf_table['Type'].iloc[i]) + ', ' + str(surf_table['Origin'].iloc[i]))
+
+                surf_table['TypeYear'] = merge_list
+                
+                dict_reclass[label] = surf_table[surf_table['TypeYear'] == cbox.currentText()].index.item()
+    
+            Type = Type.append(pd.DataFrame.from_dict([dict_reclass]).set_index('ID'))
+    
             self.write_to_db(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
 
         # Update rest of ComboBoxes
         def type_changed(): 
             try:          
-                urb_type = dlg.comboBoxType.currentText()
+                urb_type = dlg.comboBoxTableSelect.currentText()
                 TypeID =Type[Type['type_origin'] == urb_type].index.item()
         
-                for i in [dlg.comboBoxEvrType, dlg.comboBoxDecType, dlg.comboBoxGrassType, dlg.comboBoxWallMtr,
-                dlg.comboBoxRoofMtr, dlg.comboBoxWallClr, dlg.comboBoxRoofClr, dlg.comboBoxBsoilType]:
-                    i.clear()
+                # for i in [dlg.comboBoxEvrType, dlg.comboBoxDecType, dlg.comboBoxGrassType,
+                # dlg.comboBoxRoofMtr, dlg.comboBoxWaterType, dlg.QgsFieldComboBox dlg.comboBoxBsoilType]:
+                #     i.clear()
         
-                def change_veg(cbox, surface, var, idx):
+                def add_to_combobox(cbox, sheet, surface):
                     cbox.clear()
-                    item_list = veg[var][veg['Surface'] == surface].tolist()
-                    [*set(item_list)]
-                    cbox.addItems([*set(item_list)])
+                    item_list = sheet['Type'][sheet['Surface'] == surface].tolist()
+                    origin = sheet['Origin'][sheet['Surface'] == surface].tolist()
+                    
+                    merge_list = []
+                    for i, j in zip(item_list, origin):
+                        # Join type and origin to present for user
+                        merge_list.append((i + ', ' + j))
+
+                    cbox.addItems(merge_list)
+                    # Set index according to selected base type
                     try:
-                        indexer = veg.loc[Type.loc[TypeID, surface],var]
+                        indexer = sheet.loc[Type.loc[TypeID, surface],'Type']
+                        print(indexer)
                         cbox.setCurrentIndex(item_list.index(indexer))
                     except:
                         pass
-
-                def change_nonveg(cbox, surface, var, idx):
-                    cbox.clear()
-                    item_list = nonveg[var][nonveg['Surface'] == surface].tolist()  
-                    cbox.addItems([*set(item_list)])
-                    try:
-                        indexer = nonveg.loc[Type.loc[TypeID, surface],var]
-                        cbox.setCurrentIndex(item_list.index(indexer))
-                    except:
-                        pass
-                
-                # def change_soil(cbox, surface, var, idx):
-                #     cbox.clear()
-                #     item_list = bsoil[var][bsoil['Surface'] == surface].tolist()  
-                #     cbox.addItems([*set(item_list)])
-                #     try:
-                #         indexer = bsoil.loc[Type.loc[TypeID, surface],var]
-                #         cbox.setCurrentIndex(item_list.index(indexer))
-                #     except:
-                #         pass
-
-                def change_water(cbox , var, idx):
-                    cbox.clear()
-                    item_list = water[var].tolist()  
-                    cbox.addItems([*set(item_list)])
-                    try:
-                        indexer = water.loc[Type.loc[TypeID],var]
-                        cbox.setCurrentIndex(item_list.index(indexer))
-                    except:
-                        pass
-
-                change_veg(dlg.comboBoxEvrType,'Evergreen Tree', 'Type' , TypeID)
-                change_veg(dlg.comboBoxDecType,'Decidous Tree', 'Type' , TypeID)
-                change_veg(dlg.comboBoxGrassType,'Grass', 'Type' , TypeID)
-                change_nonveg(dlg.comboBoxWallMtr, 'Building', 'Type', TypeID)
-                change_nonveg(dlg.comboBoxRoofMtr, 'Building', 'Type', TypeID)
-                change_nonveg(dlg.comboBoxPavedMtr, 'Paved', 'Type', TypeID)
-                change_nonveg(dlg.comboBoxBsoilType, 'Bare Soil', 'Type', TypeID)
-                change_water(dlg.comboBoxWaterType, 'Type', TypeID)
+          
+                add_to_combobox(dlg.comboBoxEvrType, veg, 'Evergreen Tree')
+                add_to_combobox(dlg.comboBoxDecType, veg, 'Decidous Tree')
+                add_to_combobox(dlg.comboBoxGrassType,veg, 'Grass')
+                add_to_combobox(dlg.comboBoxBuildingType, nonveg,  'Building')
+                add_to_combobox(dlg.comboBoxPavedType, nonveg, 'Paved')
+                add_to_combobox(dlg.comboBoxBsoilType, nonveg, 'Bare Soil')
+                add_to_combobox(dlg.comboBoxWaterType, water, 'Water')
             
             except:
                 pass
            
-        dlg.comboBoxType.currentIndexChanged.connect(type_changed)
+        dlg.comboBoxTableSelect.currentIndexChanged.connect(type_changed)
         
-        def clr_change():
-            try:
-                dlg.textBrowserWallFrom.setText(nonveg['Origin'][(
-                    nonveg['Surface'] == 'Building') & 
-                    (nonveg['Type'] == dlg.comboBoxWallMtr.currentText()) & 
-                    (nonveg['Color'] == dlg.comboBoxWallClr.currentText())].item())
+        def surface_info_changed(self):
+            # Clear and enable ComboBox
+            dlg.comboBoxElementInfo.clear()
+            dlg.comboBoxElementInfo.setEnabled(True)
+            # Read what surface user has chosen
+            surface = dlg.comboBoxSurface.currentText()
 
-                dlg.textBrowserRoofFrom.setText(nonveg['Origin'][(
-                    nonveg['Surface'] == 'Building') & 
-                    (nonveg['Type'] == dlg.comboBoxRoofMtr.currentText()) & 
-                    (nonveg['Color'] == dlg.comboBoxRoofClr.currentText())].item())
-                    
-                dlg.textBrowserPavedFrom.setText(nonveg['Origin'][(
-                    nonveg['Surface'] == 'Paved') & 
-                    (nonveg['Type'] == dlg.comboBoxPavedMtr.currentText()) & 
-                    (nonveg['Color'] == dlg.comboBoxPavedClr.currentText())].item())  
-                
-                dlg.textBrowserBsoilFrom.setText(nonveg['Origin'][(
-                    nonveg['Surface'] == 'Bare Soil') & 
-                    (nonveg['Type'] == dlg.comboBoxBsoilType.currentText())].item())
-            except:
-                pass
+            # Select correct tab fom DB (Veg, NonVeg or Water)
+            if surface == 'Paved' or surface == 'Building' or surface == 'Bare Soil':
+                item_list = nonveg['Type'][nonveg['Surface'] == surface].tolist()
+                origin = nonveg['Origin'][nonveg['Surface'] == surface].tolist()
+                clr = nonveg['Color'][nonveg['Surface'] == surface].tolist()
 
-        dlg.comboBoxWallClr.currentIndexChanged.connect(clr_change)
-        dlg.comboBoxRoofClr.currentIndexChanged.connect(clr_change)  
-        dlg.comboBoxPavedClr.currentIndexChanged.connect(clr_change)
-        dlg.comboBoxBsoilType.currentIndexChanged.connect(clr_change)  
-  
-        def water_change():
-            try:
-                dlg.textBrowserWaterFrom.setText(water['Origin'][((water['Type'] == dlg.comboBoxWaterType.currentText()))].item())
-            except:
-                pass
+                app_list = []
+                for item, origin, clr in zip(item_list, origin, clr):
+                    # Join type and origin to present for user
+                    app_list.append((clr + ' ' + item + ', ' + origin))
 
-        dlg.comboBoxWaterType.currentIndexChanged.connect(water_change)  
+            elif surface == 'Water':
+                item_list = nonveg['Type'][nonveg['Surface'] == surface].tolist()
+                origin = nonveg['Origin'][nonveg['Surface'] == surface].tolist()
 
-        def mtr_change():
-            dlg.comboBoxWallClr.clear()
-            dlg.comboBoxRoofClr.clear()
-            dlg.comboBoxPavedClr.clear()
+                app_list = []
+                for i, j in zip(item_list, origin):
+                    # Join type and origin to present for user
+                    app_list.append((i + ', ' + j))
+            else: 
+                item_list = veg['Type'][veg['Surface'] == surface].tolist()
+                origin = veg['Origin'][veg['Surface'] == surface].tolist()
 
-            wall_clr_list = nonveg['Color'][(nonveg['Surface'] == 'Building') & (nonveg['Type'] == dlg.comboBoxWallMtr.currentText())].to_list()
-            roof_clr_list = nonveg['Color'][(nonveg['Surface'] == 'Building') & (nonveg['Type'] == dlg.comboBoxRoofMtr.currentText())].to_list()
-            paved_clr_list = nonveg['Color'][(nonveg['Surface'] == 'Paved') & (nonveg['Type'] == dlg.comboBoxPavedMtr.currentText())].to_list()
-            #bsoil_clr_list = bsoil['Color'][(bsoil['Surface'] == 'Bare Soil') & (bsoil['Type'] == dlg.comboBoxBsoilType.currentText())].to_list()
+                app_list = []
+                for i, j in zip(item_list, origin):
+                    # Join type and origin to present for user
+                    app_list.append((i + ', ' + j))
 
-            dlg.comboBoxWallClr.addItems([*(wall_clr_list)])
-            dlg.comboBoxRoofClr.addItems([*(roof_clr_list)])
-            dlg.comboBoxPavedClr.addItems([*(paved_clr_list)])
+            dlg.comboBoxElementInfo.addItems(app_list)
         
-        dlg.comboBoxWallMtr.currentIndexChanged.connect(mtr_change)
-        dlg.comboBoxRoofMtr.currentIndexChanged.connect(mtr_change)
-        dlg.comboBoxPavedMtr.currentIndexChanged.connect(mtr_change)
-       #dlg.comboBoxBsoilType.currentIndexChanged.connect(mtr_change)
-
-        def var_change():
-            urb_type = dlg.comboBoxType.currentText()
-
-            def change_veg(cbox, col, var):
-                cbox.clear()
-                item_list = veg[var][veg['Type'] == col].tolist()
-                [*set(item_list)]
-                cbox.addItems([*set(item_list)])
-                if len(veg.loc[TypeID[col], var]) > 0:
-                    indexer = veg.loc[TypeID[col], var].item()
-                    cbox.setCurrentIndex(item_list.index(indexer))
-
-            try:
-                urb_type = dlg.comboBoxType.currentText()
-                TypeID =Type[Type['type_origin'] == urb_type].index.item()
-                if len(veg.loc[TypeID['Decidous Tree'], 'Surface']) > 0:  
-                    dlg.textBrowserBuild.setText(  
-                        '<b>Min Albedo: ' +  '</b>' +str(alb.loc[veg.loc[veg[veg['Type'] == dlg.comboBoxEvrType.currentText()].index.item(), 'Alb'], 'Alb_min']))
-                    #'\nMax Albedo: ' +  '</b>' + str(alb.loc[veg.loc[veg[veg['Type'] == self.dlg.comboBoxEvrType.currentText()].index.item(), 'Alb'], 'Alb_max'])  
-                    #str(alb.loc[nonveg['Alb'].loc[(nonveg['Material'] == self.dlg.comboBoxWallMtr.currentText()) & (nonveg['Color'] == self.dlg.comboBoxWallClr.currentText())].item(),'Alb_Min'])
-            except:
-                pass
-            # Fill Data From for vegeation
-            try:             
-
-                dlg.textBrowserEvrFrom.setText(str(veg['Origin'].loc[veg['Type'] == dlg.comboBoxEvrType.currentText()].item()))
-                dlg.textBrowserDecFrom.setText(str(veg['Origin'].loc[(veg['Type'] == dlg.comboBoxDecType.currentText())].item()))
-                dlg.textBrowserGrassFrom.setText(str(veg['Origin'].loc[(veg['Type'] == dlg.comboBoxGrassType.currentText())].item()))
-            except:
-                pass    
         
         def surface_info_changed(self):
             # Clear and enable ComboBox
@@ -770,17 +645,12 @@ class Urban_type_creator(object):
                     app_list.append((i + ', ' + j))
 
             dlg.comboBoxElementInfo.addItems(app_list)
-
-        dlg.comboBoxEvrType.currentIndexChanged.connect(var_change)
-        dlg.comboBoxDecType.currentIndexChanged.connect(var_change)
-        dlg.comboBoxGrassType.currentIndexChanged.connect(var_change)
-        dlg.comboBoxWallMtr.currentIndexChanged.connect(var_change)
         
         dlg.comboBoxSurface.currentIndexChanged.connect(surface_info_changed)
 
-        dlg.compButton.clicked.connect(check_type)
-        dlg.genButton.clicked.connect(generate_type)
-        dlg.genButton.clicked.connect(self.resetTypeEditor)
+        dlg.pushButtonCheck.clicked.connect(check_type)
+        dlg.pushButtonGen.clicked.connect(generate_type)
+        dlg.pushButtonGen.clicked.connect(self.resetTypeEditor)
         #        dlg.pushButtonUpdate.clicked.connect(self.resetTypeEditor)
 
     def resetTypeEditor(self):
@@ -820,10 +690,12 @@ class Urban_type_creator(object):
                 Tb = eval('dlg.textBrowserTab' + str(i))
                 Tb.setDisabled(True)
                 Tb.clear()
+                Cb = eval('dlg.checkBox' + str(i))
+                Cb.setChecked(False)
 
             # Clear and enable ComboBox
-            dlg.comboBoxElement.clear()
-            dlg.comboBoxElement.setEnabled(True)
+            dlg.comboBoxBaseElement.clear()
+            dlg.comboBoxBaseElement.setEnabled(True)
             
             # Read what surface user has chosen
             surface = dlg.comboBoxSurface.currentText()
@@ -865,8 +737,8 @@ class Urban_type_creator(object):
                 dlg.textBrowserColor.setHidden(True)
                 dlg.textEditColor.setHidden(True)
 
-            dlg.comboBoxElement.addItems(app_list)
-            dlg.comboBoxElement.setCurrentIndex(-1)
+            dlg.comboBoxBaseElement.addItems(app_list)
+            dlg.comboBoxBaseElement.setCurrentIndex(-1)
 
             table = table_dict_pd[str(surface)]
             col_list = list(table)
@@ -924,12 +796,105 @@ class Urban_type_creator(object):
                 Nc_fill_list = []
                 idx = 0
                 for desc, orig, idx in zip(table_surf['Description'].tolist() ,table_surf['Origin'].tolist(), list(range(len(table_surf['Origin'].tolist())))):
-                    Nc_fill_list.append((str(idx) + ':' + desc + ', ' + orig))
+                    Nc_fill_list.append((str(idx) + ': ' + desc + ', ' + orig))
                 
                 Nc.addItems(Nc_fill_list)
         
         dlg.comboBoxSurface.currentIndexChanged.connect(changed_surface)
-        
+
+        def base_element_changed():
+            surface = dlg.comboBoxSurface.currentText()
+            surf_table = table_dict_pd[surface]
+            merge_list = []
+            if surface == 'Paved' or surface == 'Building' or surface == 'Bare Soil':
+                for i in range(len(table_dict_pd[surface])):
+                    merge_list.append(
+                        str(surf_table['Color'].iloc[i]) + 
+                        ' ' + 
+                        str(surf_table['Type'].iloc[i]) + 
+                        ', ' +
+                         str(surf_table['Origin'].iloc[i]))
+                lod_2 = nonveg
+            elif surface == 'Water':
+                for i in range(len(table_dict_pd[surface])):
+                    merge_list.append(
+                        str(surf_table['Type'].iloc[i]) +
+                         ', ' +
+                          str(surf_table['Origin'].iloc[i]))
+                lod_2 = water
+                
+            else:
+                for i in range(len(table_dict_pd[surface])):
+                    merge_list.append(
+                        str(surf_table['Type'].iloc[i]) +
+                         ', ' +
+                          str(surf_table['Origin'].iloc[i]))
+                lod_2 = veg
+                
+            surf_table['TypeOrigin'] = merge_list
+            item_list = surf_table[surf_table['Surface'] == surface]
+            base_element = dlg.comboBoxBaseElement.currentText()
+            print('837')
+            try:
+                idx = item_list[item_list['TypeOrigin'] == base_element].index.item()
+                # base_element_ID = surf_table[surf_table['TypeOrigin'] == base_element].index.item()
+                #     # Set index according to selected base type
+                # indexer = surf_table.loc[Type.loc[base_element_ID, surface],'Type']
+                col_list = list(surf_table)
+                remove_cols = ['ID', 'Surface', 'Color', 'Origin', 'Type']
+                print('845')
+                if surface != 'Decidous Tree':
+                    remove_cols.append('Por') # Exception for just Decidous tree in Veg
+
+                for col in remove_cols:
+                    try:
+                        col_list.remove(col)
+                    except:
+                        pass
+
+                for i in range(len(col_list)): 
+                    Nc = eval('dlg.comboBox_' + str(i))
+                    Nc.setEnabled(True)
+                    
+                    # Assign correct tab
+                    table_name_str = rev_table_dict[col_list[i]]
+                    
+                    table = table_dict_pd[table_name_str]
+                    table_surf = table[table['Surface'] == surface]
+
+                    origin = table['Origin'][table['Surface'] == surface].tolist()
+                    merge_list = []
+                    if surface == 'Paved' or surface == 'Building' or surface == 'Bare Soil':
+                        for i in range(len(table_dict_pd[surface])):
+                            merge_list.append(
+                                str(table_surf['Color'].iloc[i]) + 
+                                ' ' + 
+                                str(table_surf['Type'].iloc[i]) + 
+                                ', ' +
+                                str(table_surf['Origin'].iloc[i]))
+                        else:
+                            for i in range(len(table_dict_pd[surface])):
+                                merge_list.append(
+                                    str(table_surf['Type'].iloc[i]) +
+                                    ', ' +
+                                    str(table_surf['Origin'].iloc[i]))
+                            lod_2 = veg
+                    # # Set index according to selected base type
+
+                    a  = lod_2.loc[idx, table_dict_ID[table_name_str]]
+                    indexer = table_surf.loc[a, 'Description']
+                    #indexer = table.loc[lod_2.loc[idx, table_dict_ID[table_name_str]],'Descripiton']
+                    print('877')
+                    Nc.setCurrentIndex(item_list.index(str(indexer)))
+
+
+                print('')
+
+            except:
+                pass
+            print('')
+            
+
         def print_table(idx):
             surface = dlg.comboBoxSurface.currentText()
             
@@ -982,7 +947,6 @@ class Urban_type_creator(object):
                 #'Author' : str(dlg.textEditAutor.toPlainText())
             }
 
-
             for i in range(len(col_list)):
                 Oc = eval('dlg.textBrowser_' + str(i))
                 oldField = Oc.toPlainText()
@@ -1020,6 +984,7 @@ class Urban_type_creator(object):
 
         dlg.pushButtonCheck.clicked.connect(check_element)
         dlg.pushButtonGen.clicked.connect(generate_element)
+        dlg.comboBoxBaseElement.currentIndexChanged.connect(base_element_changed)
         dlg.pushButtonGen.clicked.connect(self.reset_surface_editor)
 
     def reset_surface_editor(self):
@@ -1745,7 +1710,7 @@ class Urban_type_creator(object):
     #     db['type_location'] = type_list
 
         
-    #     urb_type = dlg.comboBoxType.currentText() 
+    #     urb_type = dlg.comboBoxTableSelect.currentText() 
     #     selection = db.loc[db['type_location'] == urb_type]
         
     #     if len(urb_type)>0:
@@ -1769,23 +1734,23 @@ class Urban_type_creator(object):
     #     else:
     #         QMessageBox.information(None, 'Error', 'No Type Selected')
 
-    def resetPlugin(self):
-        self.layerComboManagerPointField.clear()
-        self.layerComboManagerPoint.clear()
-        self.dlg.comboBoxVector.clear()
-        self.dlg.comboBoxField.clear()
-        self.dlg.comboBoxField.setCurrentIndex(-1)
-        self.dlg.textBrowser.clear()
-        self.dlg.textOutput.clear()
+    # def resetPlugin(self):
+    #     self.layerComboManagerPointField.clear()
+    #     self.layerComboManagerPoint.clear()
+    #     self.dlg.comboBoxVector.clear()
+    #     self.dlg.comboBoxField.clear()
+    #     self.dlg.comboBoxField.setCurrentIndex(-1)
+    #     self.dlg.textBrowser.clear()
+    #     self.dlg.textOutput.clear()
 
-        for i in range(1,14):
-            Ls = eval('self.dlg.comboBoxClass' + str(i))
-            Ls.clear()
-            vars()['self.dlg.comboBoxClass' + str(i)] = Ls
+    #     for i in range(1,14):
+    #         Ls = eval('self.dlg.comboBoxClass' + str(i))
+    #         Ls.clear()
+    #         vars()['self.dlg.comboBoxClass' + str(i)] = Ls
 
-            Rs = eval('self.dlg.comboBoxNew' + str(i))
-            Rs.clear()
-            vars()['self.dlg.comboBoxNew' + str(i)] = Rs
+    #         Rs = eval('self.dlg.comboBoxNew' + str(i))
+    #         Rs.clear()
+    #         vars()['self.dlg.comboBoxNew' + str(i)] = Rs
 
 
     def closeEvent(self, event):
@@ -2010,7 +1975,7 @@ class Urban_type_creator(object):
 #         self.dlg.comboBoxField.clear()
 #         self.dlg.comboBoxField.setCurrentIndex(-1)
 #         self.dlg.comboBoxField.setDisabled(True)
-#         self.dlg.comboBoxType.clear()
+#         self.dlg.comboBoxTableSelect.clear()
 #         self.dlg.textBrowser.clear()
 #         self.dlg.textOutput.clear()
 #         self.dlg.Qlabel.clear()
@@ -2054,8 +2019,8 @@ class Urban_type_creator(object):
 #             type_list.append(str(db['Type'].iloc[i]) + ', ' + str(db['Location'].iloc[i]))
 #         db['type_location'] = type_list
 
-#         self.dlg.comboBoxType.addItems(sorted(type_list)) 
-#         self.dlg.comboBoxType.setCurrentIndex(-1)
+#         self.dlg.comboBoxTableSelect.addItems(sorted(type_list)) 
+#         self.dlg.comboBoxTableSelect.setCurrentIndex(-1)
 
 #         for i in range(1,14):
 #             Ls = eval('self.dlg.comboBoxClass' + str(i))
@@ -2169,7 +2134,7 @@ class Urban_type_creator(object):
 #             db['type_location'] = type_list
 
             
-#             urb_type = self.dlg.comboBoxType.currentText() 
+#             urb_type = self.dlg.comboBoxTableSelect.currentText() 
 #             selection = db.loc[db['type_location'] == urb_type]
             
 #             if len(urb_type)>0:

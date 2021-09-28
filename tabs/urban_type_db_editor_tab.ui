@@ -23,6 +23,54 @@
       <enum>QFrame::Raised</enum>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_42">
+        <property name="text">
+         <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:12pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:14pt;&quot;&gt;Select Table&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QComboBox" name="comboBoxTableSelect">
+        <property name="toolTip">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QCheckBox" name="checkBoxA">
+        <property name="text">
+         <string>Lock Table</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QTextBrowser" name="textBrowser_Surface">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>36</height>
+         </size>
+        </property>
+        <property name="html">
+         <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Surface&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
+      </item>
       <item row="3" column="1">
        <widget class="QComboBox" name="comboBoxSurface">
         <property name="enabled">
@@ -90,40 +138,6 @@
         </item>
        </widget>
       </item>
-      <item row="3" column="0">
-       <widget class="QTextBrowser" name="textBrowser_Surface">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>36</height>
-         </size>
-        </property>
-        <property name="html">
-         <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Surface&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label_42">
-        <property name="text">
-         <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:12pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:14pt;&quot;&gt;Select Table&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-       </widget>
-      </item>
       <item row="4" column="0">
        <widget class="QTextBrowser" name="textBrowserDesc">
         <property name="sizePolicy">
@@ -163,13 +177,6 @@ p, li { white-space: pre-wrap; }
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
-       <widget class="QCheckBox" name="checkBoxA">
-        <property name="text">
-         <string>Lock Table</string>
-        </property>
-       </widget>
-      </item>
       <item row="5" column="0">
        <widget class="QTextBrowser" name="textBrowserOrig">
         <property name="sizePolicy">
@@ -206,39 +213,14 @@ p, li { white-space: pre-wrap; }
         </property>
        </widget>
       </item>
-      <item row="1" column="0">
-       <widget class="QComboBox" name="comboBoxTableSelect">
-        <property name="toolTip">
-         <string/>
+      <item row="0" column="1">
+       <widget class="QCheckBox" name="checkBoxAdvanced">
+        <property name="text">
+         <string>Advanced Editing</string>
         </property>
        </widget>
       </item>
      </layout>
-    </widget>
-   </item>
-   <item row="0" column="1">
-    <widget class="QTextBrowser" name="textBrowserDf">
-     <property name="enabled">
-      <bool>true</bool>
-     </property>
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="minimumSize">
-      <size>
-       <width>1000</width>
-       <height>0</height>
-      </size>
-     </property>
-     <property name="maximumSize">
-      <size>
-       <width>16777215</width>
-       <height>16777215</height>
-      </size>
-     </property>
     </widget>
    </item>
    <item row="1" column="1">
@@ -313,6 +295,9 @@ p, li { white-space: pre-wrap; }
           <layout class="QGridLayout" name="gridLayout_3">
            <item row="8" column="1">
             <widget class="QgsFilterLineEdit" name="textEditRefJournal">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="qgisRelation" stdset="0">
               <string notr="true"/>
              </property>
@@ -320,6 +305,9 @@ p, li { white-space: pre-wrap; }
            </item>
            <item row="5" column="1">
             <widget class="QgsFilterLineEdit" name="textEditRefAuthor">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="qgisRelation" stdset="0">
               <string notr="true"/>
              </property>
@@ -327,6 +315,9 @@ p, li { white-space: pre-wrap; }
            </item>
            <item row="7" column="1">
             <widget class="QgsFilterLineEdit" name="textEditRefYear">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="qgisRelation" stdset="0">
               <string notr="true"/>
              </property>
@@ -334,6 +325,9 @@ p, li { white-space: pre-wrap; }
            </item>
            <item row="6" column="0">
             <widget class="QTextBrowser" name="textBrowserRef3">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
              <property name="sizePolicy">
               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -357,6 +351,9 @@ p, li { white-space: pre-wrap; }
            </item>
            <item row="6" column="1">
             <widget class="QgsFilterLineEdit" name="textEditRefTitle">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="qgisRelation" stdset="0">
               <string notr="true"/>
              </property>
@@ -364,6 +361,9 @@ p, li { white-space: pre-wrap; }
            </item>
            <item row="7" column="0">
             <widget class="QTextBrowser" name="textBrowserRef4">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
              <property name="sizePolicy">
               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -387,6 +387,9 @@ p, li { white-space: pre-wrap; }
            </item>
            <item row="5" column="0">
             <widget class="QTextBrowser" name="textBrowserRef2">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
              <property name="sizePolicy">
               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -410,6 +413,9 @@ p, li { white-space: pre-wrap; }
            </item>
            <item row="8" column="0">
             <widget class="QTextBrowser" name="textBrowserRef5">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
              <property name="sizePolicy">
               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -436,7 +442,7 @@ p, li { white-space: pre-wrap; }
          <item row="5" column="0">
           <widget class="QPushButton" name="pushButtonAddRef">
            <property name="enabled">
-            <bool>true</bool>
+            <bool>false</bool>
            </property>
            <property name="text">
             <string>Add Reference</string>
@@ -445,6 +451,9 @@ p, li { white-space: pre-wrap; }
          </item>
          <item row="4" column="0">
           <widget class="QPushButton" name="pushButtonCheckRef">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
            <property name="text">
             <string>Check Compatibility</string>
            </property>
@@ -492,33 +501,30 @@ p, li { white-space: pre-wrap; }
      </layout>
     </widget>
    </item>
-   <item row="2" column="1">
-    <layout class="QGridLayout" name="gridLayout_8">
-     <item row="0" column="0">
-      <widget class="QPushButton" name="pushButtonCheck">
-       <property name="text">
-        <string>Check Compatibility</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="0">
-      <widget class="QPushButton" name="pushButtonCancel">
-       <property name="text">
-        <string>Close</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <widget class="QPushButton" name="pushButtonGen">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="text">
-        <string>Add Table</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
+   <item row="0" column="1">
+    <widget class="QTextBrowser" name="textBrowserDf">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>1000</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>16777215</height>
+      </size>
+     </property>
+    </widget>
    </item>
    <item row="1" column="0" rowspan="2">
     <layout class="QGridLayout" name="gridLayout">
@@ -923,6 +929,34 @@ p, li { white-space: pre-wrap; }
      </item>
     </layout>
    </item>
+   <item row="2" column="1">
+    <layout class="QGridLayout" name="gridLayout_8">
+     <item row="0" column="0">
+      <widget class="QPushButton" name="pushButtonCheck">
+       <property name="text">
+        <string>Check Compatibility</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QPushButton" name="pushButtonCancel">
+       <property name="text">
+        <string>Close</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QPushButton" name="pushButtonGen">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>Add Table</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
   </layout>
  </widget>
  <customwidgets>
@@ -969,7 +1003,7 @@ p, li { white-space: pre-wrap; }
   <connection>
    <sender>checkBoxRef</sender>
    <signal>clicked(bool)</signal>
-   <receiver>frame1_3</receiver>
+   <receiver>textEditRefAuthor</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -977,24 +1011,72 @@ p, li { white-space: pre-wrap; }
      <y>347</y>
     </hint>
     <hint type="destinationlabel">
-     <x>967</x>
-     <y>552</y>
+     <x>1123</x>
+     <y>366</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>pushButtonCheckRef</sender>
+   <sender>checkBoxRef</sender>
    <signal>clicked(bool)</signal>
-   <receiver>pushButtonAddRef</receiver>
+   <receiver>textEditRefYear</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>967</x>
-     <y>623</y>
+     <x>1116</x>
+     <y>317</y>
     </hint>
     <hint type="destinationlabel">
-     <x>967</x>
-     <y>652</y>
+     <x>1123</x>
+     <y>452</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBoxRef</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>textEditRefJournal</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1116</x>
+     <y>317</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1123</x>
+     <y>495</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBoxRef</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>textEditRefTitle</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1116</x>
+     <y>317</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1123</x>
+     <y>409</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBoxRef</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>pushButtonCheckRef</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1116</x>
+     <y>317</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>993</x>
+     <y>533</y>
     </hint>
    </hints>
   </connection>

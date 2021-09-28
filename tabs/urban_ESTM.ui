@@ -72,7 +72,7 @@ p, li { white-space: pre-wrap; }
       <item row="1" column="1">
        <widget class="QComboBox" name="comboBoxSurface">
         <property name="enabled">
-         <bool>false</bool>
+         <bool>true</bool>
         </property>
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -344,10 +344,23 @@ p, li { white-space: pre-wrap; }
       <enum>QFrame::Raised</enum>
      </property>
      <layout class="QGridLayout" name="gridLayout_9">
+      <item row="5" column="0">
+       <widget class="QPushButton" name="pushButtonCheckRef">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Check Compatibility</string>
+        </property>
+       </widget>
+      </item>
       <item row="4" column="0">
        <layout class="QGridLayout" name="gridLayout_3">
         <item row="5" column="1">
          <widget class="QgsFilterLineEdit" name="textEditRefAuthor">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="qgisRelation" stdset="0">
            <string notr="true"/>
           </property>
@@ -401,6 +414,9 @@ p, li { white-space: pre-wrap; }
         </item>
         <item row="7" column="1">
          <widget class="QgsFilterLineEdit" name="textEditRefYear">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="qgisRelation" stdset="0">
            <string notr="true"/>
           </property>
@@ -431,6 +447,9 @@ p, li { white-space: pre-wrap; }
         </item>
         <item row="8" column="1">
          <widget class="QgsFilterLineEdit" name="textEditRefJournal">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="qgisRelation" stdset="0">
            <string notr="true"/>
           </property>
@@ -438,6 +457,9 @@ p, li { white-space: pre-wrap; }
         </item>
         <item row="6" column="1">
          <widget class="QgsFilterLineEdit" name="textEditRefTitle">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="qgisRelation" stdset="0">
            <string notr="true"/>
           </property>
@@ -466,16 +488,6 @@ p, li { white-space: pre-wrap; }
           </property>
          </widget>
         </item>
-        <item row="0" column="1">
-         <widget class="QCheckBox" name="checkBoxRef">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
-          <property name="text">
-           <string>Enable</string>
-          </property>
-         </widget>
-        </item>
         <item row="0" column="0">
          <widget class="QLabel" name="label_45">
           <property name="text">
@@ -487,19 +499,22 @@ p, li { white-space: pre-wrap; }
           </property>
          </widget>
         </item>
+        <item row="0" column="1">
+         <widget class="QCheckBox" name="checkBoxRef">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="text">
+           <string>Enable</string>
+          </property>
+         </widget>
+        </item>
        </layout>
-      </item>
-      <item row="5" column="0">
-       <widget class="QPushButton" name="pushButtonCheckRef">
-        <property name="text">
-         <string>Check Compatibility</string>
-        </property>
-       </widget>
       </item>
       <item row="6" column="0">
        <widget class="QPushButton" name="pushButtonAddRef">
         <property name="enabled">
-         <bool>true</bool>
+         <bool>false</bool>
         </property>
         <property name="text">
          <string>Add Reference</string>
@@ -2987,7 +3002,7 @@ p, li { white-space: pre-wrap; }
     </widget>
    </item>
    <item row="0" column="3" rowspan="2">
-    <widget class="QFrame" name="">
+    <widget class="QFrame" name="frame">
      <property name="frameShape">
       <enum>QFrame::Box</enum>
      </property>
@@ -3012,7 +3027,7 @@ p, li { white-space: pre-wrap; }
       <item row="1" column="0">
        <widget class="QPushButton" name="pushButtonGen">
         <property name="enabled">
-         <bool>true</bool>
+         <bool>false</bool>
         </property>
         <property name="text">
          <string>Add ESTM</string>
@@ -3036,7 +3051,7 @@ p, li { white-space: pre-wrap; }
   <connection>
    <sender>checkBoxRef</sender>
    <signal>clicked(bool)</signal>
-   <receiver>frame1_3</receiver>
+   <receiver>pushButtonCheckRef</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -3044,15 +3059,15 @@ p, li { white-space: pre-wrap; }
      <y>347</y>
     </hint>
     <hint type="destinationlabel">
-     <x>967</x>
-     <y>552</y>
+     <x>1098</x>
+     <y>203</y>
     </hint>
    </hints>
   </connection>
   <connection>
    <sender>pushButtonCheckRef</sender>
    <signal>clicked(bool)</signal>
-   <receiver>pushButtonAddRef</receiver>
+   <receiver>pushButtonCheckRef</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -3060,8 +3075,72 @@ p, li { white-space: pre-wrap; }
      <y>623</y>
     </hint>
     <hint type="destinationlabel">
-     <x>967</x>
-     <y>652</y>
+     <x>1098</x>
+     <y>203</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBoxRef</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>textEditRefAuthor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1260</x>
+     <y>21</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1260</x>
+     <y>51</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBoxRef</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>textEditRefJournal</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1260</x>
+     <y>21</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1260</x>
+     <y>171</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBoxRef</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>textEditRefTitle</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1260</x>
+     <y>21</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1260</x>
+     <y>91</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBoxRef</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>textEditRefYear</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1260</x>
+     <y>21</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1260</x>
+     <y>131</y>
     </hint>
    </hints>
   </connection>
