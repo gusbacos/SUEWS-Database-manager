@@ -589,7 +589,7 @@ class Urban_type_creator(object):
                 TypeID =Type[Type['type_origin'] == urb_type].index.item()
         
                 for i in [dlg.comboBoxEvrType, dlg.comboBoxDecType, dlg.comboBoxGrassType, dlg.comboBoxWallMtr,
-                dlg.comboBoxRoofMtr, dlg.comboBoxWallClr, dlg.comboBoxRoofClr]:
+                dlg.comboBoxRoofMtr, dlg.comboBoxWallClr, dlg.comboBoxRoofClr, dlg.comboBoxBsoilType]:
                     i.clear()
         
                 def change_veg(cbox, surface, var, idx):
@@ -639,7 +639,7 @@ class Urban_type_creator(object):
                 change_nonveg(dlg.comboBoxWallMtr, 'Building', 'Type', TypeID)
                 change_nonveg(dlg.comboBoxRoofMtr, 'Building', 'Type', TypeID)
                 change_nonveg(dlg.comboBoxPavedMtr, 'Paved', 'Type', TypeID)
-                # change_soil(dlg.comboBoxBsoilType, 'Bare Soil', 'Type', TypeID)
+                change_nonveg(dlg.comboBoxBsoilType, 'Bare Soil', 'Type', TypeID)
                 change_water(dlg.comboBoxWaterType, 'Type', TypeID)
             
             except:
@@ -647,7 +647,6 @@ class Urban_type_creator(object):
            
         dlg.comboBoxType.currentIndexChanged.connect(type_changed)
         
-
         def clr_change():
             try:
                 dlg.textBrowserWallFrom.setText(nonveg['Origin'][(
@@ -665,33 +664,43 @@ class Urban_type_creator(object):
                     (nonveg['Type'] == dlg.comboBoxPavedMtr.currentText()) & 
                     (nonveg['Color'] == dlg.comboBoxPavedClr.currentText())].item())  
                 
-                # dlg.textBrowserBsoilFrom.setText(bsoil['Origin'][(
-                #     bsoil['Surface'] == 'Bare Soil') & 
-                #     (bsoil['Type'] == dlg.comboBoxBsoilType.currentText())].item())
+                dlg.textBrowserBsoilFrom.setText(nonveg['Origin'][(
+                    nonveg['Surface'] == 'Bare Soil') & 
+                    (nonveg['Type'] == dlg.comboBoxBsoilType.currentText())].item())
             except:
                 pass
+
         dlg.comboBoxWallClr.currentIndexChanged.connect(clr_change)
         dlg.comboBoxRoofClr.currentIndexChanged.connect(clr_change)  
-        dlg.comboBoxPavedClr.currentIndexChanged.connect(clr_change)  
+        dlg.comboBoxPavedClr.currentIndexChanged.connect(clr_change)
+        dlg.comboBoxBsoilType.currentIndexChanged.connect(clr_change)  
+  
+        def water_change():
+            try:
+                dlg.textBrowserWaterFrom.setText(water['Origin'][((water['Type'] == dlg.comboBoxWaterType.currentText()))].item())
+            except:
+                pass
+
+        dlg.comboBoxWaterType.currentIndexChanged.connect(water_change)  
 
         def mtr_change():
-                dlg.comboBoxWallClr.clear()
-                dlg.comboBoxRoofClr.clear()
-                dlg.comboBoxPavedClr.clear()
+            dlg.comboBoxWallClr.clear()
+            dlg.comboBoxRoofClr.clear()
+            dlg.comboBoxPavedClr.clear()
 
-                wall_clr_list = nonveg['Color'][(nonveg['Surface'] == 'Building') & (nonveg['Type'] == dlg.comboBoxWallMtr.currentText())].to_list()
-                roof_clr_list = nonveg['Color'][(nonveg['Surface'] == 'Building') & (nonveg['Type'] == dlg.comboBoxRoofMtr.currentText())].to_list()
-                paved_clr_list = nonveg['Color'][(nonveg['Surface'] == 'Paved') & (nonveg['Type'] == dlg.comboBoxPavedMtr.currentText())].to_list()
-                # bsoil_clr_list = bsoil['Color'][(bsoil['Surface'] == 'Bare Soil') & (bsoil['Type'] == dlg.comboBoxBsoilType.currentText())].to_list()
+            wall_clr_list = nonveg['Color'][(nonveg['Surface'] == 'Building') & (nonveg['Type'] == dlg.comboBoxWallMtr.currentText())].to_list()
+            roof_clr_list = nonveg['Color'][(nonveg['Surface'] == 'Building') & (nonveg['Type'] == dlg.comboBoxRoofMtr.currentText())].to_list()
+            paved_clr_list = nonveg['Color'][(nonveg['Surface'] == 'Paved') & (nonveg['Type'] == dlg.comboBoxPavedMtr.currentText())].to_list()
+            #bsoil_clr_list = bsoil['Color'][(bsoil['Surface'] == 'Bare Soil') & (bsoil['Type'] == dlg.comboBoxBsoilType.currentText())].to_list()
 
-                dlg.comboBoxWallClr.addItems([*(wall_clr_list)])
-                dlg.comboBoxRoofClr.addItems([*(roof_clr_list)])
-                dlg.comboBoxPavedClr.addItems([*(paved_clr_list)])
+            dlg.comboBoxWallClr.addItems([*(wall_clr_list)])
+            dlg.comboBoxRoofClr.addItems([*(roof_clr_list)])
+            dlg.comboBoxPavedClr.addItems([*(paved_clr_list)])
         
         dlg.comboBoxWallMtr.currentIndexChanged.connect(mtr_change)
         dlg.comboBoxRoofMtr.currentIndexChanged.connect(mtr_change)
         dlg.comboBoxPavedMtr.currentIndexChanged.connect(mtr_change)
-        dlg.comboBoxBsoilType.currentIndexChanged.connect(mtr_change)
+       #dlg.comboBoxBsoilType.currentIndexChanged.connect(mtr_change)
 
         def var_change():
             urb_type = dlg.comboBoxType.currentText()
@@ -941,6 +950,10 @@ class Urban_type_creator(object):
             vars()['dlg.comboBox_' + str(idx)] = table_id
             table_id = table_id.currentText()
 
+        def check_element():
+            QMessageBox.information(None, 'Sucessful','Your Element is compatible. \n Press Add Element to add to your Local Database')
+            dlg.pushButtonGen.setEnabled(True)
+
         def generate_element():
             # self.write_to_db(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
             db_path = self.plugin_dir + '/database_copy.xlsx'  
@@ -1005,7 +1018,7 @@ class Urban_type_creator(object):
 
             QMessageBox.information(None, 'Sucessful','Element Added')
 
-
+        dlg.pushButtonCheck.clicked.connect(check_element)
         dlg.pushButtonGen.clicked.connect(generate_element)
         dlg.pushButtonGen.clicked.connect(self.reset_surface_editor)
 
@@ -1157,7 +1170,11 @@ class Urban_type_creator(object):
             except:
                 pass
     
-        dlg.comboBoxRef.currentIndexChanged.connect(ref_changed) 
+        dlg.comboBoxRef.currentIndexChanged.connect(ref_changed)
+
+        def check_reference():
+            dlg.pushButtonAddRef.setEnabled(True)
+            QMessageBox.information(None, 'Sucessful','Your reference is compatible. \n Press Add Refernce to add to your Local Database')
 
         def add_reference():
             Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
@@ -1177,8 +1194,6 @@ class Urban_type_creator(object):
             self.write_to_db(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
 
             QMessageBox.information(None, 'Sucessful','Reference Added')
-
-
 
 
         def add_table():
@@ -1387,7 +1402,6 @@ class Urban_type_creator(object):
                         pass
                 except:
                     pass
-  
 
             # elif var == 'OHM'
             #     OHM = OHM.append(df_new_edit)
@@ -1400,10 +1414,10 @@ class Urban_type_creator(object):
             # elif var == 'Drainage':
             #     dr = dr.append(df_new_edit)
 
-
         dlg.pushButtonCheck.clicked.connect(checker)
         dlg.pushButtonGen.clicked.connect(add_table)
         dlg.pushButtonGen.clicked.connect(self.reset_DB_editor)
+        dlg.pushButtonCheckRef.clicked.connect(check_reference)
         dlg.pushButtonAddRef.clicked.connect(add_reference)
         dlg.pushButtonAddRef.clicked.connect(self.reset_DB_editor)
 
