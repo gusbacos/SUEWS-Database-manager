@@ -21,19 +21,19 @@
  *                                                                         *
  ***************************************************************************/
 '''
-from os import stat_result
+from os import stat_result, write
 from pandas.core.indexes import base
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon, QPixmap
 from qgis.PyQt.QtWidgets import QFileDialog, QAction, QMessageBox
-from qgis.gui import QgsMapLayerComboBox, QgsFieldComboBox, QgsMessageBar
-from qgis.core import QgsVectorLayer, QgsMapLayerProxyModel, Qgis, QgsProject, QgsFieldProxyModel, QgsField
+from qgis.core import QgsVectorLayer, QgsMapLayerProxyModel, QgsProject
 # Initialize Qt resources from file resources.py
 from .tabs.urban_type_creator_tab import UrbanTypeCreator
 from .tabs.urban_type_editor_tab import UrbanTypeEditor
 from .tabs.urban_type_db_editor_tab import UrbanTypeDBEditor
 from .tabs.urban_elements_creator_tab import UrbanElementsCreator
 from .tabs.urban_ESTM import ESTM_creator
+from .tabs.urban_ref_manager import UrbanRefManager
 from .resources import *
 from pathlib import Path
 import geopandas as gpd
@@ -44,9 +44,7 @@ import codecs
 # from timezonefinder import TimezoneFinder as tf
 import urllib
 import time
-import datetime
 import re
-import openpyxl
 # import excelrd as xlrd # Possibly needed for python 3.2. perhaps not
 
 # Import the code for the dialog
@@ -228,6 +226,11 @@ class Urban_type_creator(object):
         self.setup_ESTM_creator(estm_creator)
         self.dlg.tabWidget.addTab(estm_creator, 'ESTM_Creator')
 
+        ref_manager = UrbanRefManager()
+        self.setup_ref_manager(ref_manager)
+        self.dlg.tabWidget.addTab(ref_manager, 'Reference Manager')
+
+
     #################################################################################################
     #                                                                                               #
     #                                     Urban Type Classifier                                     #
@@ -345,6 +348,67 @@ class Urban_type_creator(object):
             # To readthedocs? 
             webbrowser.open_new_tab(url)
 
+        def updateDB():
+
+            Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
+            suews_Type, suews_veg, suews_nonveg, suews_water, suews_ref, suews_alb, suews_em, suews_OHM, suews_LAI, suews_st, suews_cnd, suews_LGP, suews_dr,suews_VG, suews_ANOHM, suews_BIOCO2, suews_MVCND, suews_por = self.read_suews_db()
+            table_dict,table_dict_ID,table_dict_pd,dict_str_var, dict_gen_type = self.get_dicts(veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
+            rev_table_dict = dict((v, k) for k, v in table_dict.items())
+
+
+            local_db = [Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por]
+            suews_db = [suews_Type, suews_veg, suews_nonveg, suews_water, suews_ref, suews_alb, suews_em, suews_OHM, suews_LAI, suews_st, suews_cnd, suews_LGP, suews_dr,suews_VG, suews_ANOHM, suews_BIOCO2, suews_MVCND, suews_por]
+
+            # change_list = []
+            for local, suews in zip(local_db, suews_db):
+                merge = pd.concat([local, suews]).drop_duplicates(keep='first')
+                if len(merge) > 0:
+                    var = rev_table_dict[local.name]
+                    # change_list = change_list.append(str(rev_table_dict[local.name]))
+                    if var == 'Type':
+                        Type = merge
+                    elif var == 'Veg':
+                        veg = merge
+                    elif var == 'NonVeg':
+                        nonveg = merge
+                    elif var == 'Water':
+                        water = merge
+                    elif var == 'Referece':
+                        ref = merge
+                    elif var == 'Emissivity':
+                        em = merge
+                    elif var == 'Albedo':
+                        alb = merge
+                    elif var == 'OHM':
+                        OHM = merge
+                    elif var == 'Leaf Area Index':
+                        LAI = merge
+                    elif var == 'Conductance':
+                        cnd = merge
+                    elif var == 'Leaf Growth Power':
+                        LGP = merge
+                    elif var == 'Drainage':
+                        dr = merge
+                    elif var == 'Vegetation Growth':
+                        VG = merge
+                    elif var == 'ANOHM':
+                        ANOHM = merge
+                    elif var == 'Biogen CO2':
+                        BIOCO2 = merge
+                    elif var == 'Max Vegetation Conductance':
+                        MVCND = merge
+                    elif var == 'Porosity':
+                        por = merge
+                    elif var == 'Water Storage':
+                        st = merge
+                    else:
+                        print(var)
+
+            self.write_to_db(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
+
+            QMessageBox.information(None, 'Sucessful','Database Updated \nNew Entries have been added to SAY WHICH ONES HAS BEEN CHANGED?' )
+
+
         def start_progress():
             att_field =  dlg.comboBoxField.currentText()
 
@@ -403,6 +467,11 @@ class Urban_type_creator(object):
         self.layerComboManagerPoint.setCurrentIndex(-1)
         self.layerComboManagerPoint.setFilters(QgsMapLayerProxyModel.PolygonLayer)
 
+        dlg.pushButtonUpdateDatabase.clicked.connect(updateDB)
+        dlg.pushButtonUpdateDatabase.clicked.connect(self.resetClassifier)
+
+        
+
         # Set up for the run button
         dlg.runButton.clicked.connect(start_progress)
 
@@ -437,8 +506,12 @@ class Urban_type_creator(object):
             Rs.setCurrentIndex(-1)
             vars()['dlg.comboBoxNew' + str(i)] = Rs
 
-        # Set type info when changing type
+        
         dlg.comboBoxType.currentIndexChanged.connect(typeInfo)
+        
+    def resetClassifier(self):
+        self.setup_tabs()
+        self.dlg.tabWidget.setCurrentIndex(0)
 
     
     
@@ -519,11 +592,12 @@ class Urban_type_creator(object):
                 merge_list = []
                 for i in range(len(surf_table)):
                     merge_list.append(str(surf_table['Type'].iloc[i]) + ', ' + str(surf_table['Origin'].iloc[i]))
-
-                surf_table['TypeYear'] = merge_list
+                surf_tablec = surf_table.copy()
+                surf_tablec['TypeYear'] = merge_list
                 
-                dict_reclass[label] = surf_table[surf_table['TypeYear'] == cbox.currentText()].index.item()
-    
+                dict_reclass[label] = surf_tablec[surf_tablec['TypeYear'] == cbox.currentText()].index.item()
+                print(dict_reclass)
+
             Type = Type.append(pd.DataFrame.from_dict([dict_reclass]).set_index('ID'))
     
             self.write_to_db(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
@@ -552,7 +626,6 @@ class Urban_type_creator(object):
                     # Set index according to selected base type
                     try:
                         indexer = sheet.loc[Type.loc[TypeID, surface],'Type']
-                        print(indexer)
                         cbox.setCurrentIndex(item_list.index(indexer))
                     except:
                         pass
@@ -680,7 +753,7 @@ class Urban_type_creator(object):
 
         def changed_surface():
             
-            for i in range(0,13):
+            for i in range(0,19):
                 Oc = eval('dlg.textBrowser_' + str(i))
                 Oc.clear()
                 Oc.setDisabled(True)
@@ -755,7 +828,7 @@ class Urban_type_creator(object):
                     pass
             # Clear ComboBoxes 
 
-            for i in range(len(col_list)): 
+            for i in range(len(col_list)-1): 
                           
                 Oc = eval('dlg.textBrowser_' + str(i))
                 Oc.setEnabled(True)
@@ -834,7 +907,6 @@ class Urban_type_creator(object):
             surf_table['TypeOrigin'] = merge_list
             item_list = surf_table[surf_table['Surface'] == surface]
             base_element = dlg.comboBoxBaseElement.currentText()
-            print('837')
             try:
                 idx = item_list[item_list['TypeOrigin'] == base_element].index.item()
                 # base_element_ID = surf_table[surf_table['TypeOrigin'] == base_element].index.item()
@@ -842,7 +914,6 @@ class Urban_type_creator(object):
                 # indexer = surf_table.loc[Type.loc[base_element_ID, surface],'Type']
                 col_list = list(surf_table)
                 remove_cols = ['ID', 'Surface', 'Color', 'Origin', 'Type']
-                print('845')
                 if surface != 'Decidous Tree':
                     remove_cols.append('Por') # Exception for just Decidous tree in Veg
 
@@ -884,15 +955,12 @@ class Urban_type_creator(object):
                     a  = lod_2.loc[idx, table_dict_ID[table_name_str]]
                     indexer = table_surf.loc[a, 'Description']
                     #indexer = table.loc[lod_2.loc[idx, table_dict_ID[table_name_str]],'Descripiton']
-                    print('877')
                     Nc.setCurrentIndex(item_list.index(str(indexer)))
 
 
-                print('')
 
             except:
                 pass
-            print('')
             
 
         def print_table(idx):
@@ -915,9 +983,20 @@ class Urban_type_creator(object):
             vars()['dlg.comboBox_' + str(idx)] = table_id
             table_id = table_id.currentText()
 
-        def check_element():
-            QMessageBox.information(None, 'Sucessful','Your Element is compatible. \n Press Add Element to add to your Local Database')
-            dlg.pushButtonGen.setEnabled(True)
+        def check_element(): # Add more checkers
+
+            if len(dlg.comboBoxSurface.currentText()) <1: 
+                QMessageBox.warning(None, 'Surface Missing','Please select a surface')
+            elif len(dlg.textEditType.toPlainText()) <1: 
+                QMessageBox.warning(None, 'Description Missing','Please fill in the Description Box')
+            elif len(dlg.textEditLoc.toPlainText()) <1: 
+                QMessageBox.warning(None, 'Origin Missing','Please fill in the Origin Box')
+            elif dlg.comboBoxSurface.currentText() == 'Paved' or  dlg.comboBoxSurface.currentText() == 'Building' or dlg.comboBoxSurface.currentText() == 'Bare Soil':
+                if len(dlg.textEditColor.toPlainText()) < 1:
+                    QMessageBox.warning(None, 'Color Missing', 'Please fill in the Color Box')
+            else:
+                QMessageBox.information(None, 'Sucessful','Your Element is compatible. \n Press Add Element to add to your Local Database')
+                dlg.pushButtonGen.setEnabled(True)
 
         def generate_element():
             # self.write_to_db(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
@@ -947,7 +1026,7 @@ class Urban_type_creator(object):
                 #'Author' : str(dlg.textEditAutor.toPlainText())
             }
 
-            for i in range(len(col_list)):
+            for i in range(len(col_list)-1):
                 Oc = eval('dlg.textBrowser_' + str(i))
                 oldField = Oc.toPlainText()
                 Nc = eval('dlg.comboBox_' + str(i))
@@ -961,13 +1040,14 @@ class Urban_type_creator(object):
 
                 idx_table= table.copy()
                 idx_table['descOrigin'] = descOrigin_list
-                sel_att = sel_att.split(':')[1] # Remove number added for interpretation in GUI
-                newField = idx_table[idx_table['descOrigin'] == sel_att].index.item()
-                
+
+                sel_att = sel_att.split(': ')[1] # Remove number added for interpretation in GUI
+
+                newField = idx_table.loc[idx_table['descOrigin'] == sel_att].index.item()
                 dict_reclass[table_dict_ID[oldField]] = newField
+                idx_table.drop(columns = 'descOrigin')
             
             df_new_edit = pd.DataFrame(dict_reclass, index = [0]).set_index('ID')
-
             # Add new line to correct tab veg, nonveg or water
             if surface == 'Paved' or surface == 'Building' or surface == 'Bare Soil':
                 df_new_edit['Color'] = dlg.textEditColor.toPlainText()
@@ -1027,7 +1107,12 @@ class Urban_type_creator(object):
         table_dict,table_dict_ID,table_dict_pd,dict_str_var,dict_gen_type = self.get_dicts(veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
 
         rev_table_dict = dict((v, k) for k, v in table_dict.items())
+        
         # Remove Conductance in some way
+        remove_list = ['Lod1_Types', 'References', 'Lod2_Veg', 'Lod2_NonVeg', 'Lod2_Water','Lod3_Conductance']
+        
+        for sheet in remove_list:
+            del rev_table_dict[sheet]
 
         dlg.comboBoxTableSelect.addItems(sorted((list(rev_table_dict.values()))))
         dlg.comboBoxTableSelect.setCurrentIndex(-1)
@@ -1055,6 +1140,13 @@ class Urban_type_creator(object):
                 Nc.setDisabled(True)
 
             try:
+                if dlg.checkBoxAdvanced.isChecked():  # FIX THIS!
+                    if 'Conductance' in [dlg.comboBoxTableSelect.itemText(i) for i in range(dlg.comboBoxTableSelect.count())]:
+                        pass
+                    else:
+                        dlg.comboBoxTableSelect.addItems(['Conductance'])
+                    
+
                 table = table_dict_pd[str(table_name)]
                 col_list = list(table)
                 
@@ -1271,14 +1363,16 @@ class Urban_type_creator(object):
                     col_list.remove(remove)
                 except:
                     pass
-
-            dict_reclass = {
-                # 'ID' : str(table_dict_ID[str(dlg.comboBoxTableSelect.currentText())] + str(int(round(time.time())))),
-                'General Type' : dict_gen_type[dlg.comboBoxSurface.currentText()],
-                'Surface' : dlg.comboBoxSurface.currentText(), 
-                # 'Description' : dlg.textEditDesc.value(),
-                # 'Origin' : dlg.textEditOrig.value()
-            }
+            try:        
+                dict_reclass = {
+                    # 'ID' : str(table_dict_ID[str(dlg.comboBoxTableSelect.currentText())] + str(int(round(time.time())))),
+                    'General Type' : dict_gen_type[dlg.comboBoxSurface.currentText()],
+                    'Surface' : dlg.comboBoxSurface.currentText(), 
+                    # 'Description' : dlg.textEditDesc.value(),
+                    # 'Origin' : dlg.textEditOrig.value()
+                }
+            except:
+                pass
 
             len_list = len(col_list)
             col_list =['General Type', 'Surface']
@@ -1295,7 +1389,7 @@ class Urban_type_creator(object):
                     QMessageBox.warning(None, oldField + ' Missing','Enter value for ' + oldField)
                     break
 
-                if Oc.toPlainText() != 'Season':
+                if Oc.toPlainText() != 'Season': # Add more to where this is fine!
                     if  special_match(Nc.value()) == False:
                         QMessageBox.warning(None, oldField + ' Error','Invalid characters in ' + oldField + '\nOnly 0-9 and . are allowed')
                         break
@@ -1326,10 +1420,8 @@ class Urban_type_creator(object):
                                 break
 
                         elif var == 'Leaf Area Index':
-                            if float(dlg.textEdit_Edit_0.value()) != 0 or float(dlg.textEdit_Edit_0.value()) != 1:
-                                QMessageBox.warning(None, 'LAI Equation error','LAIeq choices are 0 or 1')
-                                break
-                            elif float(dlg.textEdit_Edit_1.value()) < 0 or float(dlg.textEdit_Edit_1.value()) > 1:
+
+                            if float(dlg.textEdit_Edit_1.value()) < 0 or float(dlg.textEdit_Edit_1.value()) > 1:
                                 QMessageBox.warning(None, 'LAImin error','LAImin must be between 0-1')
                                 break
                             elif float(dlg.textEdit_Edit_2.value()) < 0 or float(dlg.textEdit_Edit_2.value()) > 1:
@@ -1337,6 +1429,9 @@ class Urban_type_creator(object):
                                 break
                             elif float(dlg.textEdit_Edit_1.value()) > float(dlg.textEdit_Edit_2.value()):
                                 QMessageBox.warning(None, 'Value error', dlg.textBrowser_1.toPlainText() + ' must be smaller or equal to ' + dlg.textBrowser_2.toPlainText())
+                                break
+                            elif int(dlg.textEdit_Edit_0.value()) > 1:
+                                QMessageBox.warning(None, 'LAI Equation error','LAIeq choices are 0 or 1')
                                 break
 
                         elif var == 'Porosity':
@@ -1368,6 +1463,22 @@ class Urban_type_creator(object):
                 except:
                     pass
 
+        
+
+                
+                    # #self.dlg.textBrowserNewID.setText(str(' '.join(re.findall('[a-zA-Z]+', table.index[1])))+ str(len(table)+1))
+                                
+                    # ref_show = ref['authoryear'].to_dict()
+                    # table['Reference'] = '' 
+                    # for i in range(len(table)):
+                    #     table['Reference'].iloc[i] = ref_show[table['Ref'].iloc[i]] 
+                    
+                    # text_table = table.drop(columns =['Surface','General Type', 'Ref']).reset_index()
+        
+                    # dlg.textBrowserDf.setText(str(text_table.drop(columns='ID').to_html()))        
+                    # dlg.comboBoxSurface.setCurrentIndex(-1)
+
+
             # elif var == 'OHM'
             #     OHM = OHM.append(df_new_edit)
             # elif var == 'Leaf Area Index':
@@ -1378,7 +1489,7 @@ class Urban_type_creator(object):
             #     LGP = LGP.append(df_new_edit)
             # elif var == 'Drainage':
             #     dr = dr.append(df_new_edit)
-
+        # dlg.checkBoxAdvanced.stateChanged.connect(advanced_editing)
         dlg.pushButtonCheck.clicked.connect(checker)
         dlg.pushButtonGen.clicked.connect(add_table)
         dlg.pushButtonGen.clicked.connect(self.reset_DB_editor)
@@ -1457,19 +1568,92 @@ class Urban_type_creator(object):
 
         dlg.pushButtonAddRef.clicked.connect(add_reference)
         dlg.pushButtonAddRef.clicked.connect(show_references) # Update only ref? and things related to that!
-    
 
 
-    #######################################################################################################################################
-    #######################################################################################################################################
-    #######################################################################################################################################
-    #######################################################################################################################################
 
+    #################################################################################################
+    #                                                                                               #
+    #                                  Reference manager                                            #
+    #                                                                                               #
+    #################################################################################################
+
+    def setup_ref_manager(self, dlg):
+        
+        Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
+        table_dict,table_dict_ID,table_dict_pd,dict_str_var,dict_gen_type= self.get_dicts(veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
+        i = 1
+        for i in range(0,16):
+            FN = eval('dlg.textEditFN_' + str(i))
+            LN = eval('dlg.textEditLN0_' + str(i))
+            FN.clear()
+            LN.clear()
+
+        def check_reference():
+            dlg.pushButtonAddRef.setEnabled(True)
+            QMessageBox.information(None, 'Sucessful','Your reference is compatible. \n Press Add Refernce to add to your Local Database')
+
+        def add_references():
+
+            for i in range(0,16):
+                FN = eval('dlg.textEditFN_' + str(i))
+                LN = eval('dlg.textEditLN0_' + str(i))
+                FN.value()
+                LN.value()
+                # Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
+
+            # # for i in range(0,16):
+            # FN = eval('dlg.textEditFN_' + str(1))
+            # LN = eval('dlg.textEditLN_' + str(1))
+            # i = 0
+            # FN = eval('dlg.textEditFN_'+ str(0))
+            # LN = eval('dlg.textEditLN_' + str(i))
+            # Le.clear()
+            # Le.setText(str(-999))
+        
+            # FN = dlg.textEditFN_1.value()
+            # LN = dlg.textEditLN0_1.value()
+                # FN_list = []
+                # LN_list = []
+                # # if FN.value.isNull:
+                # #     pass
+                # # else:
+                # FN_list.append(FN.value())
+ 
+                # # if LN.value.isNull:
+                # #     pass
+                # # else:
+                # LN_list.append(LN.value())
+                                    
+            print(FN.value() + ' ' + LN.value())
+
+        dlg.pushButtonCheck.clicked.connect(add_references)
+            # dict_reclass = {
+            #     'ID' : 'Ref' + str(int(round(time.time()))),
+            #     # 'Author' : dlg.textEditRefAuthor.value(),
+            #     'Title' : dlg.textEditTitle.value(),
+            #     'Publication Year' : dlg.textEditYear.value(),
+            #     'Journal' : dlg.textEditJournal.value(),
+            # }
+
+            # new_edit_ref = pd.DataFrame(dict_reclass, index=[0]).set_index('ID')
+
+            # ref = ref.append(new_edit_ref)
+            
+            # self.write_to_db(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
+
+            # QMessageBox.information(None, 'Sucessful','Reference Added')
+        
+
+    #######################################################################################################################################
+    #######################################################################################################################################
+    #######################################################################################################################################
+    #######################################################################################################################################
     def read_db(self):
         db_path = self.plugin_dir + '/database_copy.xlsx'  
         idx_col = 'ID'
         # Lod 1
         Type = pd.read_excel(db_path, sheet_name = 'Lod1_Types', index_col=  idx_col, engine = 'openpyxl')
+        Type.name = 'Lod1_Types'
         # Lod 2
         veg = pd.read_excel(db_path, sheet_name = 'Lod2_Veg', index_col = idx_col, engine = 'openpyxl')
         veg.name = 'Lod2_Veg'
@@ -1479,6 +1663,7 @@ class Urban_type_creator(object):
         water.name = 'Lod2_Water'
         # Ref
         ref = pd.read_excel(db_path, sheet_name = 'References', index_col = idx_col, engine = 'openpyxl')
+        ref.name = 'References'
         # Lod 3
         alb =  pd.read_excel(db_path, sheet_name = 'Lod3_Albedo', index_col = idx_col, engine = 'openpyxl')
         alb.name = 'Lod3_Albedo'
@@ -1509,6 +1694,53 @@ class Urban_type_creator(object):
         
         return Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por
 
+    def read_suews_db(self):
+
+        # set path to our read the docs
+
+        db_path = self.plugin_dir + '/SUEWS_db.xlsx'  
+        idx_col = 'ID'
+        # Lod 1
+        suews_Type = pd.read_excel(db_path, sheet_name = 'Lod1_Types', index_col=  idx_col, engine = 'openpyxl')
+        # Lod 2
+        suews_veg = pd.read_excel(db_path, sheet_name = 'Lod2_Veg', index_col = idx_col, engine = 'openpyxl')
+        suews_veg.name = 'Lod2_Veg'
+        suews_nonveg = pd.read_excel(db_path, sheet_name = 'Lod2_NonVeg', index_col = idx_col, engine = 'openpyxl')
+        suews_nonveg.name = 'Lod2_NonVeg'
+        suews_water = pd.read_excel(db_path, sheet_name = 'Lod2_Water', index_col = idx_col, engine = 'openpyxl')
+        suews_water.name = 'Lod2_Water'
+        # Ref
+        suews_ref = pd.read_excel(db_path, sheet_name = 'References', index_col = idx_col, engine = 'openpyxl')
+        # Lod 3
+        suews_alb =  pd.read_excel(db_path, sheet_name = 'Lod3_Albedo', index_col = idx_col, engine = 'openpyxl')
+        suews_alb.name = 'Lod3_Albedo'
+        suews_em =  pd.read_excel(db_path, sheet_name = 'Lod3_Emissivity', index_col = idx_col, engine = 'openpyxl')
+        suews_em.name = 'Lod3_Emissivity'
+        suews_OHM =  pd.read_excel(db_path, sheet_name = 'Lod3_OHM', index_col = idx_col, engine = 'openpyxl') # Away from Veg
+        suews_OHM.name = 'Lod3_OHM'
+        suews_LAI =  pd.read_excel(db_path, sheet_name = 'Lod3_LAI', index_col = idx_col, engine = 'openpyxl')
+        suews_LAI.name = 'Lod3_OHM'
+        suews_st = pd.read_excel(db_path, sheet_name = 'Lod3_Storage', index_col = idx_col, engine = 'openpyxl')
+        suews_st.name = 'Lod3_Storage'
+        suews_cnd = pd.read_excel(db_path, sheet_name = 'Lod3_Conductance', index_col = idx_col, engine = 'openpyxl') # Away from Veg
+        suews_cnd.name = 'Lod3_Conductance'
+        suews_LGP = pd.read_excel(db_path, sheet_name = 'Lod3_LGP', index_col = idx_col, engine = 'openpyxl')
+        suews_LGP.name = 'Lod3_LGP'
+        suews_dr = pd.read_excel(db_path, sheet_name = 'Lod3_Drainage', index_col = idx_col, engine = 'openpyxl')
+        suews_dr.name = 'Lod3_Drainage'
+        suews_VG = pd.read_excel(db_path, sheet_name = 'Lod3_VegetationGrowth', index_col = idx_col, engine = 'openpyxl')
+        suews_VG.name = 'Lod3_VegetationGrowth'
+        suews_ANOHM = pd.read_excel(db_path, sheet_name = 'Lod3_ANOHM', index_col = idx_col, engine = 'openpyxl')
+        suews_ANOHM.name = 'Lod3_ANOHM'
+        suews_BIOCO2 = pd.read_excel(db_path, sheet_name = 'Lod3_BiogenCO2',index_col = idx_col, engine = 'openpyxl')
+        suews_BIOCO2.name = 'Lod3_BiogenCO2'
+        suews_MVCND = pd.read_excel(db_path, sheet_name= 'Lod3_MaxVegetationConductance', index_col = idx_col, engine = 'openpyxl')
+        suews_MVCND.name = 'Lod3_MaxVegetationConductance'
+        suews_por = pd.read_excel(db_path, sheet_name = 'Lod3_Porosity', index_col = idx_col, engine = 'openpyxl')
+        suews_por.name = 'Lod3_Porosity'
+        
+        return suews_Type, suews_veg, suews_nonveg, suews_water, suews_ref, suews_alb, suews_em, suews_OHM, suews_LAI, suews_st, suews_cnd, suews_LGP, suews_dr,suews_VG, suews_ANOHM, suews_BIOCO2, suews_MVCND, suews_por
+
     def write_to_db(self,Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por):
 
             db_path = self.plugin_dir + '/database_copy.xlsx'  
@@ -1537,8 +1769,15 @@ class Urban_type_creator(object):
 
 
     def get_dicts(self,veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por):
+        
 
+        # FIX THESE DICTS!
         table_dict = {
+            'Type' : 'Lod1_Types',
+            'Ref' :'References', 
+            'Veg' : 'Lod2_Veg',
+            'NonVeg' : 'Lod2_NonVeg',
+            'Water' : 'Lod2_Water',
             'Emissivity': 'Lod3_Emissivity',
             'OHM': 'Lod3_OHM',
             'Albedo': 'Lod3_Albedo',
@@ -1570,9 +1809,8 @@ class Urban_type_creator(object):
             'Vegetation Growth' : 'VG',
             'ANOHM' : 'ANOHM',
             'BIOCO2' : 'BIOCO2',
-            'MVCND' : 'MVCND',
+            'Max Vegetation Conductance' : 'MVCND',
             'Porosity' : 'Por',
-
             'Evergreen Tree' : 'Veg',
             'Decidous Tree' : 'Veg',
             'Grass' : 'Veg',
@@ -1599,7 +1837,6 @@ class Urban_type_creator(object):
             'Biogen CO2' : BIOCO2,
             'Max Vegetation Conductance' : MVCND,
             'Porosity' : por,
-
             'Evergreen Tree' : veg,
             'Decidous Tree' : veg,
             'Grass' : veg,
