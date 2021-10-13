@@ -35,87 +35,26 @@ p, li { white-space: pre-wrap; }
        </widget>
       </item>
       <item row="1" column="0">
-       <widget class="QTextBrowser" name="textBrowser_Surface">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
+       <widget class="QLabel" name="label_3">
         <property name="maximumSize">
          <size>
-          <width>16777215</width>
-          <height>36</height>
+          <width>100</width>
+          <height>16777215</height>
          </size>
         </property>
-        <property name="html">
-         <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:12pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:8pt;&quot;&gt;Title&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+          <strikeout>false</strikeout>
+         </font>
         </property>
-       </widget>
-      </item>
-      <item row="4" column="0">
-       <widget class="QTextBrowser" name="textBrowserOrig_2">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
+        <property name="text">
+         <string>Title</string>
         </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>36</height>
-         </size>
-        </property>
-        <property name="html">
-         <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:12pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:8pt;&quot;&gt;DOI&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QgsFilterLineEdit" name="textEditYear">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>36</height>
-         </size>
-        </property>
-        <property name="inputMethodHints">
-         <set>Qt::ImhNone</set>
-        </property>
-        <property name="qgisRelation" stdset="0">
-         <string notr="true"/>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0">
-       <widget class="QTextBrowser" name="textBrowserOrig">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>36</height>
-         </size>
-        </property>
-        <property name="html">
-         <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:12pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:8pt;&quot;&gt;Journal&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
         </property>
        </widget>
       </item>
@@ -136,25 +75,66 @@ p, li { white-space: pre-wrap; }
        </widget>
       </item>
       <item row="2" column="0">
-       <widget class="QTextBrowser" name="textBrowserDesc">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
+       <widget class="QLabel" name="label_4">
+        <property name="maximumSize">
+         <size>
+          <width>100</width>
+          <height>16777215</height>
+         </size>
         </property>
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+          <strikeout>false</strikeout>
+         </font>
+        </property>
+        <property name="text">
+         <string>Year</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QgsFilterLineEdit" name="textEditYear">
         <property name="maximumSize">
          <size>
           <width>16777215</width>
           <height>36</height>
          </size>
         </property>
-        <property name="html">
-         <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:12pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:8pt;&quot;&gt;Year&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        <property name="inputMethodHints">
+         <set>Qt::ImhNone</set>
+        </property>
+        <property name="qgisRelation" stdset="0">
+         <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_5">
+        <property name="maximumSize">
+         <size>
+          <width>100</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+          <strikeout>false</strikeout>
+         </font>
+        </property>
+        <property name="text">
+         <string>Journal</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
         </property>
        </widget>
       </item>
@@ -168,6 +148,30 @@ p, li { white-space: pre-wrap; }
         </property>
         <property name="qgisRelation" stdset="0">
          <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="label_6">
+        <property name="maximumSize">
+         <size>
+          <width>100</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+          <strikeout>false</strikeout>
+         </font>
+        </property>
+        <property name="text">
+         <string>DOI</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
         </property>
        </widget>
       </item>
@@ -196,11 +200,114 @@ p, li { white-space: pre-wrap; }
       <enum>QFrame::Sunken</enum>
      </property>
      <layout class="QGridLayout" name="gridLayout">
-      <item row="0" column="1">
+      <item row="3" column="1">
+       <widget class="QgsFilterLineEdit" name="textEditLN0_1">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>36</height>
+         </size>
+        </property>
+        <property name="qgisRelation" stdset="0">
+         <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="10" column="1">
+       <widget class="QgsFilterLineEdit" name="textEditLN0_8">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>36</height>
+         </size>
+        </property>
+        <property name="qgisRelation" stdset="0">
+         <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label">
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>First Name</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="1">
+       <widget class="QgsFilterLineEdit" name="textEditLN0_4">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>36</height>
+         </size>
+        </property>
+        <property name="qgisRelation" stdset="0">
+         <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QgsFilterLineEdit" name="textEditLN0_3">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>36</height>
+         </size>
+        </property>
+        <property name="qgisRelation" stdset="0">
+         <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="9" column="1">
+       <widget class="QgsFilterLineEdit" name="textEditLN0_7">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>36</height>
+         </size>
+        </property>
+        <property name="qgisRelation" stdset="0">
+         <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="1">
+       <widget class="QgsFilterLineEdit" name="textEditLN0_6">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>36</height>
+         </size>
+        </property>
+        <property name="qgisRelation" stdset="0">
+         <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QgsFilterLineEdit" name="textEditLN0_0">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>36</height>
+         </size>
+        </property>
+        <property name="qgisRelation" stdset="0">
+         <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
        <widget class="QLabel" name="label_2">
         <property name="font">
          <font>
-          <pointsize>14</pointsize>
+          <pointsize>10</pointsize>
          </font>
         </property>
         <property name="frameShape">
@@ -214,45 +321,7 @@ p, li { white-space: pre-wrap; }
         </property>
        </widget>
       </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label">
-        <property name="font">
-         <font>
-          <pointsize>14</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>First Name</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QgsFilterLineEdit" name="textEditLN0_0">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>36</height>
-         </size>
-        </property>
-        <property name="qgisRelation" stdset="0">
-         <string notr="true"/>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QgsFilterLineEdit" name="textEditLN0_1">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>36</height>
-         </size>
-        </property>
-        <property name="qgisRelation" stdset="0">
-         <string notr="true"/>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="1">
+      <item row="4" column="1">
        <widget class="QgsFilterLineEdit" name="textEditLN0_2">
         <property name="maximumSize">
          <size>
@@ -265,33 +334,7 @@ p, li { white-space: pre-wrap; }
         </property>
        </widget>
       </item>
-      <item row="4" column="1">
-       <widget class="QgsFilterLineEdit" name="textEditLN0_3">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>36</height>
-         </size>
-        </property>
-        <property name="qgisRelation" stdset="0">
-         <string notr="true"/>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="1">
-       <widget class="QgsFilterLineEdit" name="textEditLN0_4">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>36</height>
-         </size>
-        </property>
-        <property name="qgisRelation" stdset="0">
-         <string notr="true"/>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="1">
+      <item row="7" column="1">
        <widget class="QgsFilterLineEdit" name="textEditLN0_5">
         <property name="maximumSize">
          <size>
@@ -304,150 +347,7 @@ p, li { white-space: pre-wrap; }
         </property>
        </widget>
       </item>
-      <item row="7" column="1">
-       <widget class="QgsFilterLineEdit" name="textEditLN0_6">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>36</height>
-         </size>
-        </property>
-        <property name="qgisRelation" stdset="0">
-         <string notr="true"/>
-        </property>
-       </widget>
-      </item>
-      <item row="8" column="1">
-       <widget class="QgsFilterLineEdit" name="textEditLN0_7">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>36</height>
-         </size>
-        </property>
-        <property name="qgisRelation" stdset="0">
-         <string notr="true"/>
-        </property>
-       </widget>
-      </item>
-      <item row="9" column="1">
-       <widget class="QgsFilterLineEdit" name="textEditLN0_8">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>36</height>
-         </size>
-        </property>
-        <property name="qgisRelation" stdset="0">
-         <string notr="true"/>
-        </property>
-       </widget>
-      </item>
-      <item row="10" column="1">
-       <widget class="QgsFilterLineEdit" name="textEditLN0_9">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>36</height>
-         </size>
-        </property>
-        <property name="qgisRelation" stdset="0">
-         <string notr="true"/>
-        </property>
-       </widget>
-      </item>
-      <item row="11" column="1">
-       <widget class="QgsFilterLineEdit" name="textEditLN0_10">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>36</height>
-         </size>
-        </property>
-        <property name="qgisRelation" stdset="0">
-         <string notr="true"/>
-        </property>
-       </widget>
-      </item>
-      <item row="12" column="1">
-       <widget class="QgsFilterLineEdit" name="textEditLN0_11">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>36</height>
-         </size>
-        </property>
-        <property name="qgisRelation" stdset="0">
-         <string notr="true"/>
-        </property>
-       </widget>
-      </item>
-      <item row="13" column="1">
-       <widget class="QgsFilterLineEdit" name="textEditLN0_12">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>36</height>
-         </size>
-        </property>
-        <property name="qgisRelation" stdset="0">
-         <string notr="true"/>
-        </property>
-       </widget>
-      </item>
-      <item row="14" column="1">
-       <widget class="QgsFilterLineEdit" name="textEditLN0_13">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>36</height>
-         </size>
-        </property>
-        <property name="qgisRelation" stdset="0">
-         <string notr="true"/>
-        </property>
-       </widget>
-      </item>
-      <item row="15" column="1">
-       <widget class="QgsFilterLineEdit" name="textEditLN0_14">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>36</height>
-         </size>
-        </property>
-        <property name="qgisRelation" stdset="0">
-         <string notr="true"/>
-        </property>
-       </widget>
-      </item>
-      <item row="16" column="1">
-       <widget class="QgsFilterLineEdit" name="textEditLN0_15">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>36</height>
-         </size>
-        </property>
-        <property name="qgisRelation" stdset="0">
-         <string notr="true"/>
-        </property>
-       </widget>
-      </item>
-      <item row="17" column="1">
-       <widget class="QgsFilterLineEdit" name="textEditLN0_16">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>36</height>
-         </size>
-        </property>
-        <property name="qgisRelation" stdset="0">
-         <string notr="true"/>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
+      <item row="2" column="0">
        <widget class="QgsFilterLineEdit" name="textEditFN_0">
         <property name="maximumSize">
          <size>
@@ -460,8 +360,8 @@ p, li { white-space: pre-wrap; }
         </property>
        </widget>
       </item>
-      <item row="2" column="0">
-       <widget class="QgsFilterLineEdit" name="textEditFN_1">
+      <item row="14" column="1">
+       <widget class="QgsFilterLineEdit" name="textEditLN0_12">
         <property name="maximumSize">
          <size>
           <width>16777215</width>
@@ -474,7 +374,7 @@ p, li { white-space: pre-wrap; }
        </widget>
       </item>
       <item row="3" column="0">
-       <widget class="QgsFilterLineEdit" name="textEditFN_2">
+       <widget class="QgsFilterLineEdit" name="textEditFN_1">
         <property name="maximumSize">
          <size>
           <width>16777215</width>
@@ -486,8 +386,8 @@ p, li { white-space: pre-wrap; }
         </property>
        </widget>
       </item>
-      <item row="4" column="0">
-       <widget class="QgsFilterLineEdit" name="textEditFN_3">
+      <item row="12" column="1">
+       <widget class="QgsFilterLineEdit" name="textEditLN0_10">
         <property name="maximumSize">
          <size>
           <width>16777215</width>
@@ -499,8 +399,8 @@ p, li { white-space: pre-wrap; }
         </property>
        </widget>
       </item>
-      <item row="5" column="0">
-       <widget class="QgsFilterLineEdit" name="textEditFN_4">
+      <item row="15" column="1">
+       <widget class="QgsFilterLineEdit" name="textEditLN0_13">
         <property name="maximumSize">
          <size>
           <width>16777215</width>
@@ -512,8 +412,8 @@ p, li { white-space: pre-wrap; }
         </property>
        </widget>
       </item>
-      <item row="6" column="0">
-       <widget class="QgsFilterLineEdit" name="textEditFN_5">
+      <item row="18" column="1">
+       <widget class="QgsFilterLineEdit" name="textEditLN0_16">
         <property name="maximumSize">
          <size>
           <width>16777215</width>
@@ -525,8 +425,8 @@ p, li { white-space: pre-wrap; }
         </property>
        </widget>
       </item>
-      <item row="7" column="0">
-       <widget class="QgsFilterLineEdit" name="textEditFN_6">
+      <item row="16" column="1">
+       <widget class="QgsFilterLineEdit" name="textEditLN0_14">
         <property name="maximumSize">
          <size>
           <width>16777215</width>
@@ -538,8 +438,8 @@ p, li { white-space: pre-wrap; }
         </property>
        </widget>
       </item>
-      <item row="8" column="0">
-       <widget class="QgsFilterLineEdit" name="textEditFN_7">
+      <item row="17" column="1">
+       <widget class="QgsFilterLineEdit" name="textEditLN0_15">
         <property name="maximumSize">
          <size>
           <width>16777215</width>
@@ -551,8 +451,8 @@ p, li { white-space: pre-wrap; }
         </property>
        </widget>
       </item>
-      <item row="9" column="0">
-       <widget class="QgsFilterLineEdit" name="textEditFN_8">
+      <item row="11" column="1">
+       <widget class="QgsFilterLineEdit" name="textEditLN0_9">
         <property name="maximumSize">
          <size>
           <width>16777215</width>
@@ -564,21 +464,8 @@ p, li { white-space: pre-wrap; }
         </property>
        </widget>
       </item>
-      <item row="10" column="0">
-       <widget class="QgsFilterLineEdit" name="textEditFN_9">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>36</height>
-         </size>
-        </property>
-        <property name="qgisRelation" stdset="0">
-         <string notr="true"/>
-        </property>
-       </widget>
-      </item>
-      <item row="11" column="0">
-       <widget class="QgsFilterLineEdit" name="textEditFN_10">
+      <item row="13" column="1">
+       <widget class="QgsFilterLineEdit" name="textEditLN0_11">
         <property name="maximumSize">
          <size>
           <width>16777215</width>
@@ -591,7 +478,33 @@ p, li { white-space: pre-wrap; }
        </widget>
       </item>
       <item row="12" column="0">
-       <widget class="QgsFilterLineEdit" name="textEditFN_11">
+       <widget class="QgsFilterLineEdit" name="textEditFN_10">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>36</height>
+         </size>
+        </property>
+        <property name="qgisRelation" stdset="0">
+         <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0">
+       <widget class="QgsFilterLineEdit" name="textEditFN_5">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>36</height>
+         </size>
+        </property>
+        <property name="qgisRelation" stdset="0">
+         <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="9" column="0">
+       <widget class="QgsFilterLineEdit" name="textEditFN_7">
         <property name="maximumSize">
          <size>
           <width>16777215</width>
@@ -604,7 +517,7 @@ p, li { white-space: pre-wrap; }
        </widget>
       </item>
       <item row="13" column="0">
-       <widget class="QgsFilterLineEdit" name="textEditFN_12">
+       <widget class="QgsFilterLineEdit" name="textEditFN_11">
         <property name="maximumSize">
          <size>
           <width>16777215</width>
@@ -617,7 +530,7 @@ p, li { white-space: pre-wrap; }
        </widget>
       </item>
       <item row="14" column="0">
-       <widget class="QgsFilterLineEdit" name="textEditFN_13">
+       <widget class="QgsFilterLineEdit" name="textEditFN_12">
         <property name="maximumSize">
          <size>
           <width>16777215</width>
@@ -629,8 +542,73 @@ p, li { white-space: pre-wrap; }
         </property>
        </widget>
       </item>
-      <item row="15" column="0">
-       <widget class="QgsFilterLineEdit" name="textEditFN_14">
+      <item row="5" column="0">
+       <widget class="QgsFilterLineEdit" name="textEditFN_3">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>36</height>
+         </size>
+        </property>
+        <property name="qgisRelation" stdset="0">
+         <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QgsFilterLineEdit" name="textEditFN_2">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>36</height>
+         </size>
+        </property>
+        <property name="qgisRelation" stdset="0">
+         <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="10" column="0">
+       <widget class="QgsFilterLineEdit" name="textEditFN_8">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>36</height>
+         </size>
+        </property>
+        <property name="qgisRelation" stdset="0">
+         <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="11" column="0">
+       <widget class="QgsFilterLineEdit" name="textEditFN_9">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>36</height>
+         </size>
+        </property>
+        <property name="qgisRelation" stdset="0">
+         <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0">
+       <widget class="QgsFilterLineEdit" name="textEditFN_4">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>36</height>
+         </size>
+        </property>
+        <property name="qgisRelation" stdset="0">
+         <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="0">
+       <widget class="QgsFilterLineEdit" name="textEditFN_6">
         <property name="maximumSize">
          <size>
           <width>16777215</width>
@@ -643,7 +621,7 @@ p, li { white-space: pre-wrap; }
        </widget>
       </item>
       <item row="16" column="0">
-       <widget class="QgsFilterLineEdit" name="textEditFN_15">
+       <widget class="QgsFilterLineEdit" name="textEditFN_14">
         <property name="maximumSize">
          <size>
           <width>16777215</width>
@@ -656,6 +634,32 @@ p, li { white-space: pre-wrap; }
        </widget>
       </item>
       <item row="17" column="0">
+       <widget class="QgsFilterLineEdit" name="textEditFN_15">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>36</height>
+         </size>
+        </property>
+        <property name="qgisRelation" stdset="0">
+         <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="15" column="0">
+       <widget class="QgsFilterLineEdit" name="textEditFN_13">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>36</height>
+         </size>
+        </property>
+        <property name="qgisRelation" stdset="0">
+         <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="18" column="0">
        <widget class="QgsFilterLineEdit" name="textEditFN_16">
         <property name="maximumSize">
          <size>
@@ -665,6 +669,18 @@ p, li { white-space: pre-wrap; }
         </property>
         <property name="qgisRelation" stdset="0">
          <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_7">
+        <property name="font">
+         <font>
+          <pointsize>14</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>Add Author Names</string>
         </property>
        </widget>
       </item>
@@ -688,12 +704,12 @@ p, li { white-space: pre-wrap; }
       </widget>
      </item>
      <item row="1" column="0">
-      <widget class="QPushButton" name="pushButtonGen">
+      <widget class="QPushButton" name="pushButtonAddRef">
        <property name="enabled">
         <bool>false</bool>
        </property>
        <property name="text">
-        <string>Add Table</string>
+        <string>Add Reference</string>
        </property>
       </widget>
      </item>

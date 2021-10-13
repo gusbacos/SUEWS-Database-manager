@@ -470,7 +470,10 @@ class Urban_type_creator(object):
         dlg.pushButtonUpdateDatabase.clicked.connect(updateDB)
         dlg.pushButtonUpdateDatabase.clicked.connect(self.resetClassifier)
 
-        
+        def to_type_edit():
+            self.dlg.tabWidget.setCurrentIndex(1)
+
+        dlg.editTypeButton.clicked.connect(to_type_edit)
 
         # Set up for the run button
         dlg.runButton.clicked.connect(start_progress)
@@ -725,6 +728,12 @@ class Urban_type_creator(object):
         dlg.pushButtonGen.clicked.connect(generate_type)
         dlg.pushButtonGen.clicked.connect(self.resetTypeEditor)
         #        dlg.pushButtonUpdate.clicked.connect(self.resetTypeEditor)
+
+        def to_element_edit():
+            self.dlg.tabWidget.setCurrentIndex(2)
+
+        dlg.pushButtonEditElement.clicked.connect(to_element_edit)
+
 
     def resetTypeEditor(self):
         self.setup_tabs()
@@ -1229,28 +1238,28 @@ class Urban_type_creator(object):
     
         dlg.comboBoxRef.currentIndexChanged.connect(ref_changed)
 
-        def check_reference():
-            dlg.pushButtonAddRef.setEnabled(True)
-            QMessageBox.information(None, 'Sucessful','Your reference is compatible. \n Press Add Refernce to add to your Local Database')
+        # def check_reference():
+        #     dlg.pushButtonAddRef.setEnabled(True)
+        #     QMessageBox.information(None, 'Sucessful','Your reference is compatible. \n Press Add Refernce to add to your Local Database')
 
-        def add_reference():
-            Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
+        # def add_reference():
+        #     Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
 
-            dict_reclass = {
-                'ID' : 'Ref' + str(int(round(time.time()))),
-                'Author' : dlg.textEditRefAuthor.value(),
-                'Title' : dlg.textEditRefTitle.value(),
-                'Publication Year' : dlg.textEditRefYear.value(),
-                'Journal' : dlg.textEditRefJournal.value(),
-            }
+        #     dict_reclass = {
+        #         'ID' : 'Ref' + str(int(round(time.time()))),
+        #         'Author' : dlg.textEditRefAuthor.value(),
+        #         'Title' : dlg.textEditRefTitle.value(),
+        #         'Publication Year' : dlg.textEditRefYear.value(),
+        #         'Journal' : dlg.textEditRefJournal.value(),
+        #     }
 
-            new_edit_ref = pd.DataFrame(dict_reclass, index=[0]).set_index('ID')
+        #     new_edit_ref = pd.DataFrame(dict_reclass, index=[0]).set_index('ID')
 
-            ref = ref.append(new_edit_ref)
+        #     ref = ref.append(new_edit_ref)
             
-            self.write_to_db(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
+        #     self.write_to_db(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
 
-            QMessageBox.information(None, 'Sucessful','Reference Added')
+        #     QMessageBox.information(None, 'Sucessful','Reference Added')
 
 
         def add_table():
@@ -1478,6 +1487,10 @@ class Urban_type_creator(object):
                     # dlg.textBrowserDf.setText(str(text_table.drop(columns='ID').to_html()))        
                     # dlg.comboBoxSurface.setCurrentIndex(-1)
 
+        def to_ref_manager():
+            self.dlg.tabWidget.setCurrentIndex(5)
+
+
 
             # elif var == 'OHM'
             #     OHM = OHM.append(df_new_edit)
@@ -1493,9 +1506,10 @@ class Urban_type_creator(object):
         dlg.pushButtonCheck.clicked.connect(checker)
         dlg.pushButtonGen.clicked.connect(add_table)
         dlg.pushButtonGen.clicked.connect(self.reset_DB_editor)
-        dlg.pushButtonCheckRef.clicked.connect(check_reference)
-        dlg.pushButtonAddRef.clicked.connect(add_reference)
-        dlg.pushButtonAddRef.clicked.connect(self.reset_DB_editor)
+        # dlg.pushButtonCheckRef.clicked.connect(check_reference)
+        # dlg.pushButtonAddRef.clicked.connect(add_reference)
+        # dlg.pushButtonAddRef.clicked.connect(self.reset_DB_editor)
+        dlg.pushButtonToRefManager.clicked.connect(to_ref_manager)
 
     #################################################################################################
     #                                                                                               #
@@ -1545,29 +1559,29 @@ class Urban_type_creator(object):
     
         dlg.comboBoxRef.currentIndexChanged.connect(ref_changed) 
 
-        def add_reference():
+        # def add_reference():
 
-            dict_reclass = {
-                'ID' : 'Ref' + str(int(round(time.time()))),
-                'Author' : dlg.textEditRefAuthor.value(),
-                'Title' : dlg.textEditRefTitle.value(),
-                'Publication Year' : dlg.textEditRefYear.value(),
-                'Journal' : dlg.textEditRefJournal.value(),
-            }
+        #     dict_reclass = {
+        #         'ID' : 'Ref' + str(int(round(time.time()))),
+        #         'Author' : dlg.textEditRefAuthor.value(),
+        #         'Title' : dlg.textEditRefTitle.value(),
+        #         'Publication Year' : dlg.textEditRefYear.value(),
+        #         'Journal' : dlg.textEditRefJournal.value(),
+        #     }
 
-            new_edit_ref = pd.DataFrame(dict_reclass, index=[0]).set_index('ID')
+        #     new_edit_ref = pd.DataFrame(dict_reclass, index=[0]).set_index('ID')
 
-            db_path = self.plugin_dir + '/database_copy.xlsx'
-            ref = pd.read_excel(db_path, sheet_name= 'References', index_col=  'ID', engine= 'openpyxl')
+        #     db_path = self.plugin_dir + '/database_copy.xlsx'
+        #     ref = pd.read_excel(db_path, sheet_name= 'References', index_col=  'ID', engine= 'openpyxl')
 
-            ref = ref.append(new_edit_ref)
+        #     ref = ref.append(new_edit_ref)
             
-            self.write_to_db(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
+        #     self.write_to_db(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
 
-            QMessageBox.information(None, 'Sucessful','Reference Added')
+        #     QMessageBox.information(None, 'Sucessful','Reference Added')
 
-        dlg.pushButtonAddRef.clicked.connect(add_reference)
-        dlg.pushButtonAddRef.clicked.connect(show_references) # Update only ref? and things related to that!
+        # dlg.pushButtonAddRef.clicked.connect(add_reference)
+        # dlg.pushButtonAddRef.clicked.connect(show_references) # Update only ref? and things related to that!
 
 
 
@@ -1579,54 +1593,60 @@ class Urban_type_creator(object):
 
     def setup_ref_manager(self, dlg):
         
-        Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
-        table_dict,table_dict_ID,table_dict_pd,dict_str_var,dict_gen_type= self.get_dicts(veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
-        i = 1
-        for i in range(0,16):
-            FN = eval('dlg.textEditFN_' + str(i))
-            LN = eval('dlg.textEditLN0_' + str(i))
-            FN.clear()
-            LN.clear()
 
         def check_reference():
+
             dlg.pushButtonAddRef.setEnabled(True)
+            author_list = []
+            for i in range(0,16):
+                first_name = eval('dlg.textEditFN_' + str(i))
+                last_name = eval('dlg.textEditLN0_' + str(i))   
+                name = first_name.value() + ', ' + last_name.value() + ';' 
+                if len(first_name.value()) > 0 and len(last_name.value()) > 0: 
+                    author_list.append(name)
+            
+            ref_dict = {
+                'Author' : (' '.join(author_list)),
+                'Publication Year' : dlg.textEditYear.value(),
+                'Title' : dlg.textEditTitle.value(),
+                'Journal' : dlg.textEditJournal.value(),
+                'DOI' : dlg.textEditDOI.value()
+            }
+
             QMessageBox.information(None, 'Sucessful','Your reference is compatible. \n Press Add Refernce to add to your Local Database')
 
-        def add_references():
+        def add_reference():
 
+            Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
+            author_list = []
             for i in range(0,16):
-                FN = eval('dlg.textEditFN_' + str(i))
-                LN = eval('dlg.textEditLN0_' + str(i))
-                FN.value()
-                LN.value()
-                # Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
+                first_name = eval('dlg.textEditFN_' + str(i))
+                last_name = eval('dlg.textEditLN0_' + str(i))   
+                name = first_name.value() + ', ' + last_name.value() + ';' 
+                if len(first_name.value()) > 0 and len(last_name.value()) > 0: 
+                    author_list.append(name)
+            
+            ref_dict = {
+                'ID' : 'Ref' + str(int(round(time.time()))),
+                'Author' : (' '.join(author_list)),
+                'Publication Year' : dlg.textEditYear.value(),
+                'Title' : dlg.textEditTitle.value(),
+                'Journal' : dlg.textEditJournal.value(),
+                'DOI' : dlg.textEditDOI.value()
+            }
+            
+            new_edit_ref = pd.DataFrame(ref_dict, index=[0]).set_index('ID')
 
-            # # for i in range(0,16):
-            # FN = eval('dlg.textEditFN_' + str(1))
-            # LN = eval('dlg.textEditLN_' + str(1))
-            # i = 0
-            # FN = eval('dlg.textEditFN_'+ str(0))
-            # LN = eval('dlg.textEditLN_' + str(i))
-            # Le.clear()
-            # Le.setText(str(-999))
-        
-            # FN = dlg.textEditFN_1.value()
-            # LN = dlg.textEditLN0_1.value()
-                # FN_list = []
-                # LN_list = []
-                # # if FN.value.isNull:
-                # #     pass
-                # # else:
-                # FN_list.append(FN.value())
- 
-                # # if LN.value.isNull:
-                # #     pass
-                # # else:
-                # LN_list.append(LN.value())
-                                    
-            print(FN.value() + ' ' + LN.value())
+            ref = ref.append(new_edit_ref)
+            self.write_to_db(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
 
-        dlg.pushButtonCheck.clicked.connect(add_references)
+            QMessageBox.information(None, 'Sucessful','Reference Added')
+
+  
+        dlg.pushButtonCheck.clicked.connect(check_reference)
+        dlg.pushButtonAddRef.clicked.connect(add_reference)
+        dlg.pushButtonAddRef.clicked.connect(self.reset_ref_manager)
+
             # dict_reclass = {
             #     'ID' : 'Ref' + str(int(round(time.time()))),
             #     # 'Author' : dlg.textEditRefAuthor.value(),
@@ -1873,6 +1893,10 @@ class Urban_type_creator(object):
     def reset_DB_editor(self):
         self.setup_tabs()
         self.dlg.tabWidget.setCurrentIndex(3)
+
+    def reset_ref_manager(self):
+        self.setup_tabs()
+        self.dlg.tabWidget.setCurrentIndex(5)
 
     def run(self):
         '''Run method that performs all the real work'''

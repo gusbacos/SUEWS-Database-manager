@@ -758,7 +758,7 @@
    <item row="0" column="0">
     <widget class="QPushButton" name="pushButtonUpdateDatabase">
      <property name="text">
-      <string>Update Database</string>
+      <string>Update Local-Database</string>
      </property>
     </widget>
    </item>
