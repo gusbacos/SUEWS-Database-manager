@@ -37,6 +37,8 @@ from .tabs.urban_ESTM import ESTM_creator
 from .tabs.urban_ref_manager import UrbanRefManager
 from .tabs.urban_profiles import ProfileCreator
 from .tabs.urban_irrigation import Irrigation_manager
+from .tabs.urban_anthropogenic_emission import AnthropogenicEmissionCreator
+from .tabs.urban_region_creator import RegionCreator
 from .resources import *
 from pathlib import Path
 import geopandas as gpd
@@ -226,15 +228,23 @@ class Urban_type_creator(object):
 
         estm_creator = ESTM_creator()
         self.setup_ESTM_creator(estm_creator)
-        self.dlg.tabWidget.addTab(estm_creator, 'ESTM_Creator')
+        self.dlg.tabWidget.addTab(estm_creator, 'ESTM Creator')
 
         profile_creator = ProfileCreator()
         self.setup_profile_creator(profile_creator)
         self.dlg.tabWidget.addTab(profile_creator, 'Profile Creator')
 
+        anthropogenic_emission_creator = AnthropogenicEmissionCreator()
+        self.setup_anthropogenic_emission_manager(anthropogenic_emission_creator)
+        self.dlg.tabWidget.addTab(anthropogenic_emission_creator, 'Anthropogenic Emission Creator')
+
         irrigation_manager = Irrigation_manager()
         self.setup_irrigation_manager(irrigation_manager)
         self.dlg.tabWidget.addTab(irrigation_manager, 'Irrigation Manager')
+
+        region_creator = RegionCreator()
+        self.setup_region_creator(region_creator)
+        self.dlg.tabWidget.addTab(region_creator, 'Region Creator')
 
         ref_manager = UrbanRefManager()
         self.setup_ref_manager(ref_manager)
@@ -360,7 +370,7 @@ class Urban_type_creator(object):
 
         def updateDB():
 
-            Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
+            Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil = self.read_db()
             suews_Type, suews_veg, suews_nonveg, suews_water, suews_ref, suews_alb, suews_em, suews_OHM, suews_LAI, suews_st, suews_cnd, suews_LGP, suews_dr,suews_VG, suews_ANOHM, suews_BIOCO2, suews_MVCND, suews_por = self.read_suews_db()
             table_dict,table_dict_ID,table_dict_pd,dict_str_var, dict_gen_type = self.get_dicts(veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
             rev_table_dict = dict((v, k) for k, v in table_dict.items())
@@ -584,7 +594,7 @@ class Urban_type_creator(object):
 
         def generate_type():
 
-            Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
+            Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr = self.read_db()
             table_dict,table_dict_ID,table_dict_pd,dict_str_var, dict_gen_type = self.get_dicts(veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
 
             dict_reclass = {
@@ -759,7 +769,7 @@ class Urban_type_creator(object):
     def setup_urban_elements_creator(self, dlg):
 
         # Read database and get dataframes
-        Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
+        Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil ,ESTM, irr = self.read_db()
 
         table_dict,table_dict_ID,table_dict_pd,dict_str_var,dict_gen_type = self.get_dicts(veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
      
@@ -815,7 +825,7 @@ class Urban_type_creator(object):
                     # Join type and origin to present for user
                     app_list.append((i + ', ' + j))
 
-                dlg.textBrowserColor.seDisabled(True)
+                dlg.textBrowserColor.setDisabled(True)
                 dlg.textEditColor.setDisabled(True)
 
             else: 
@@ -1020,7 +1030,7 @@ class Urban_type_creator(object):
         def generate_element():
             db_path = self.plugin_dir + '/database_copy.xlsx'  
 
-            Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
+            Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr = self.read_db()
             table_dict,table_dict_ID,table_dict_pd,dict_str_var,dict_gen_type = self.get_dicts(veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
 
             # Nonveg or veg or water?
@@ -1111,7 +1121,7 @@ class Urban_type_creator(object):
             Nc.clear()
             Nc.setDisabled(True)
         
-        Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
+        Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr = self.read_db()
         table_dict,table_dict_ID,table_dict_pd,dict_str_var,dict_gen_type = self.get_dicts(veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
 
         rev_table_dict = dict((v, k) for k, v in table_dict.items())
@@ -1230,7 +1240,7 @@ class Urban_type_creator(object):
         
         def add_table():
 
-            Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
+            Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr = self.read_db()
 
             table_dict,table_dict_ID,table_dict_pd,dict_str_var,dict_gen_type= self.get_dicts(veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
 
@@ -1635,6 +1645,96 @@ class Urban_type_creator(object):
         dlg.comboBoxBaseProfile.currentIndexChanged.connect(base_prof_changed)
         dlg.comboBoxDay.currentIndexChanged.connect(day_changed)
 
+    #################################################################################################
+    #                                                                                               #
+    #                                  Antrhopogenic Emission Manager                               #
+    #                                                                                               #
+    #################################################################################################
+
+    def setup_anthropogenic_emission_manager(self, dlg):
+
+        db_path = self.plugin_dir + '/database_copy.xlsx'  
+        ref = pd.read_excel(db_path, sheet_name = 'References', index_col = 'ID', engine = 'openpyxl')
+        prof = pd.read_excel(db_path, sheet_name = 'Lod3_Profiles', index_col = 'ID', engine = 'openpyxl')
+        AnEm = pd.read_excel(db_path, sheet_name= 'Lod3_AnthropogenicEmission', index_col= 'ID', engine= 'openpyxl')
+
+        item_list = AnEm['Description'].tolist()
+        origin = AnEm['Origin'].tolist()
+
+        idx = 0
+        for table in [AnEm, prof]:
+            app_list = []
+            item_list = table['Description'].tolist()
+            origin = table['Origin'].tolist()
+            if idx == 1: 
+                day = table['Day'].tolist()
+                for item, wday, origin in zip(item_list, day, origin):
+                    app_list.append((item + ', ' + wday + ', ' + origin))
+            else:
+                for item, origin in zip(item_list, origin):
+                        app_list.append((item + ', ' + origin))
+        
+            table['descOrigin'] = app_list
+            idx = +1
+        
+        dlg.comboBoxBaseAnEm.addItems(AnEm['descOrigin'].tolist())
+        dlg.comboBoxBaseAnEm.setCurrentIndex(-1)
+
+        for i in range(0,8):
+            Cb = eval('dlg.comboBoxAnEm_' + str(i))
+            Cb.clear()
+            Cb.addItems((prof['descOrigin'][prof['ProfileType'] == 'Anthropogenic heat flux']).tolist())
+            Cb.setCurrentIndex(-1)
+
+        def base_AnEm_changed():
+
+            base_irr = dlg.comboBoxBaseAnEm.currentText()
+            AnEm_sel = AnEm[AnEm['descOrigin'] == base_irr]
+
+            AnEm_sel_dict = AnEm_sel.squeeze().to_dict()
+            prof_sel = (prof[prof['ProfileType'] == 'Anthropogenic heat flux']).index.tolist()
+            
+            for i in range(0,30):
+                Tb = eval('dlg.textBrowser_' + str(i))
+                Le = eval('dlg.AnEmLineEdit_' + str(i))
+                Le.clear()
+                Le.setText(str(AnEm_sel_dict[Tb.toPlainText()]))
+            
+            for i in range(0,8):
+                Cb = eval('dlg.comboBoxAnEm_' + str(i))
+                CbT = eval('dlg.textBrowserCb_' + str(i))
+                prof_id = AnEm_sel_dict[CbT.toPlainText()]
+                Cb.setCurrentIndex(prof_sel.index(prof_id))
+                
+
+
+
+        def show_references():
+            ref_list = []
+            for i in range(len(ref)):
+                ref_list.append(str(ref['Author'].iloc[i]) + ' (' + str(ref['Publication Year'].iloc[i]) + ')')
+            ref['authoryear'] = ref_list
+            dlg.comboBoxRef.addItems(sorted(ref_list)) 
+            dlg.comboBoxRef.setCurrentIndex(-1)
+        
+        show_references()
+        
+        def ref_changed():
+            dlg.textBrowserRef.clear()
+
+            try:
+                ID = ref[ref['authoryear'] ==  dlg.comboBoxRef.currentText()].index.item()
+                dlg.textBrowserRef.setText(
+                    '<b>Author: ' +'</b>' + str(ref.loc[ID, 'Author']) + '<br><br><b>' +
+                    'Year: ' + '</b> '+ str(ref.loc[ID, 'Publication Year']) + '<br><br><b>' +
+                    'Title: ' + '</b> ' +  str(ref.loc[ID, 'Title']) + '<br><br><b>' +
+                    'Journal: ' + '</b>' + str(ref.loc[ID, 'Journal']) + '<br><br><b>'
+                )
+            except:
+                pass
+
+        dlg.comboBoxRef.currentIndexChanged.connect(ref_changed)
+        dlg.comboBoxBaseAnEm.currentIndexChanged.connect(base_AnEm_changed)
 
     #################################################################################################
     #                                                                                               #
@@ -1733,7 +1833,7 @@ class Urban_type_creator(object):
 
         def add_reference():
 
-            Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
+            Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr = self.read_db()
             author_list = []
             for i in range(0,16):
                 first_name = eval('dlg.textEditFN_' + str(i))
@@ -1758,6 +1858,7 @@ class Urban_type_creator(object):
 
             QMessageBox.information(None, 'Sucessful','Reference Added')
 
+
   
         dlg.pushButtonCheck.clicked.connect(check_reference)
         dlg.pushButtonAddRef.clicked.connect(add_reference)
@@ -1778,17 +1879,145 @@ class Urban_type_creator(object):
             # self.write_to_db(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
 
             # QMessageBox.information(None, 'Sucessful','Reference Added')
-
+ 
+    #################################################################################################
+    #                                                                                               #
+    #                                  Region Creator                                               #
+    #                                                                                               #
+    #################################################################################################
     
+    
+    def setup_region_creator(self, dlg):
+
+        db_path = self.plugin_dir + '/database_copy.xlsx'
+        reg = pd.read_excel(db_path, sheet_name = 'Lod0_Region', index_col = 'ID', engine = 'openpyxl')  
+        prof = pd.read_excel(db_path, sheet_name = 'Lod3_Profiles', index_col = 'ID', engine = 'openpyxl')
+        AnEm = pd.read_excel(db_path, sheet_name = 'Lod3_AnthropogenicEmission', index_col= 'ID', engine= 'openpyxl')
+        snow = pd.read_excel(db_path, sheet_name = 'Lod3_Snow', index_col = 'ID', engine = 'openpyxl')
+        irr = pd.read_excel(db_path, sheet_name = 'Lod3_Irrigation', index_col = 'ID', engine = 'openpyxl')
+        cond = pd.read_excel(db_path, sheet_name = 'Lod3_Conductance', index_col = 'ID', engine = 'openpyxl')
+
+        idx = 0
+        for table in [AnEm, prof, snow, irr, cond, reg]:
+
+            app_list = []
+
+            if idx == 1: 
+                item_list = table['Description'].tolist()
+                origin = table['Origin'].tolist()
+                day = table['Day'].tolist()
+                for item, wday, origin in zip(item_list, day, origin):
+                    app_list.append((item + ', ' + wday + ', ' + origin))
+            elif idx == 5: 
+                region = table['Region'].tolist()
+                country = table['Country'].tolist()
+                city = table['City'].tolist()
+                for rg, cn, ct in zip(region, country, city):
+                    app_list.append((rg + ', ' + cn + ', ' + ct))
+            else:
+                item_list = table['Description'].tolist()
+                origin = table['Origin'].tolist()
+                for item, origin in zip(item_list, origin):
+                        app_list.append((item + ', ' + origin))
         
+            table['descOrigin'] = app_list
+            idx = idx+1
+
+        dlg.comboBoxBaseRegion.addItems(reg['descOrigin'].tolist())
+        
+        cbox_dict = {
+            'TrafficRate_WD' : prof[prof['ProfileType'] == 'Traffic'],
+            'TrafficRate_WE' : prof[prof['ProfileType'] == 'Traffic'],
+            'CondCode' : cond,
+            'SnowCode' : snow,
+            'SnowClearingProfWD' : prof[prof['ProfileType'] == 'Snow removal'],
+            'SnowClearingProfWE' : prof[prof['ProfileType'] == 'Snow removal'],
+            'AnthropogenicCode' : AnEm,
+            'IrrigationCode' : irr,
+            'WaterUseProfManuWD' : prof[prof['ProfileType'] == 'Water use (manual)'],
+            'WaterUseProfManuWE' : prof[prof['ProfileType'] == 'Water use (manual)'],
+            'WaterUseProfAutoWD' : prof[prof['ProfileType'] == 'Water use (automatic)'],
+            'WaterUseProfAutoWE': prof[prof['ProfileType'] == 'Water use (automatic)']
+            }
+
+        for i in range(0, 17): 
+            Tb = eval('dlg.textBrowser_' + str(i))
+            Cb = eval('dlg.comboBox_' + str(i))
+            if len(Tb.toPlainText()) <1:
+                break
+            else:
+                Cb.addItems((cbox_dict[Tb.toPlainText()])['descOrigin'].tolist())
+                Cb.setCurrentIndex(-1)
+
+        def base_region_changed():
+            base_reg = dlg.comboBoxBaseRegion.currentText()
+            reg_sel = reg[reg['descOrigin'] == base_reg]
+
+            reg_sel_dict = reg_sel.squeeze().to_dict()
+
+             
+            for i in range(0,17):
+                Cb = eval('dlg.comboBox_' + str(i))
+                Tb = eval('dlg.textBrowser_' + str(i))
+
+                if len(Tb.toPlainText()) <1:
+                    break
+                else:
+                    table = cbox_dict[Tb.toPlainText()]
+                    var_id = reg_sel_dict[Tb.toPlainText()]
+                    var_identifier = table.loc[var_id, 'descOrigin']
+                    Cb.setCurrentIndex(table['descOrigin'].tolist().index(var_identifier))
+
+        def add_region():
+            db_path = self.plugin_dir + '/database_copy.xlsx'
+            reg = pd.read_excel(db_path, sheet_name = 'Lod0_Region', index_col = 'ID', engine = 'openpyxl')  
+            Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr = self.read_db()
+
+            dict_reclass = {
+                'ID' : ('Reg' + str(int(round(time.time())))),
+                'Description' : dlg.textEditDesc.value(),
+                'Region' : dlg.textEditRegion.value(),
+                'Country': dlg.textEditCountry.value(),
+                'City' : dlg.textEditCity.value(),
+                'Description' : dlg.textEditDesc.value()
+            }
+
+            for i in range(0, 17): 
+                Tb = eval('dlg.textBrowser_' + str(i))
+                Cb = eval('dlg.comboBox_' + str(i))
+                if len(Tb.toPlainText()) <1:
+                    break
+                else:
+                    col = Tb.toPlainText()
+                    val = Cb.currentText()
+
+                    table = cbox_dict[col]
+                    fill = table[table['descOrigin'] == val].index.item()
+                    
+                    dict_reclass[col] = [fill]
+            
+            df_new_edit = pd.DataFrame(dict_reclass).set_index('ID')
+
+            reg = reg.append(df_new_edit)
+            # Write to db
+            self.write_to_db(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr)
+
+            QMessageBox.information(None, 'Sucessful','Edit Added')
+
+        dlg.pushButtonCheck.clicked.connect(add_region)
+        dlg.comboBoxBaseRegion.currentIndexChanged.connect(base_region_changed)
 
     #######################################################################################################################################
     #######################################################################################################################################
     #######################################################################################################################################
     #######################################################################################################################################
+
     def read_db(self):
         db_path = self.plugin_dir + '/database_copy.xlsx'  
         idx_col = 'ID'
+        # Lod 0
+        reg = pd.read_excel(db_path, sheet_name = 'Lod0_Region', index_col=  idx_col, engine = 'openpyxl')
+        reg.name = 'Lod0_Region'
         # Lod 1
         Type = pd.read_excel(db_path, sheet_name = 'Lod1_Types', index_col=  idx_col, engine = 'openpyxl')
         Type.name = 'Lod1_Types'
@@ -1829,13 +2058,26 @@ class Urban_type_creator(object):
         MVCND.name = 'Lod3_MaxVegetationConductance'
         por = pd.read_excel(db_path, sheet_name = 'Lod3_Porosity', index_col = idx_col, engine = 'openpyxl')
         por.name = 'Lod3_Porosity'
-        
-        return Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por
+        snow = pd.read_excel(db_path, sheet_name = 'Lod3_Snow', index_col = idx_col, engine = 'openpyxl')
+        snow.name = 'Lod3_Snow'
+        AnEm = pd.read_excel(db_path, sheet_name = 'Lod3_AnthropogenicEmission',index_col = idx_col, engine = 'openpyxl')
+        AnEm.name = 'Lod3_AnthropogenicEmission'
+        prof = pd.read_excel(db_path, sheet_name= 'Lod3_Profiles', index_col = idx_col, engine = 'openpyxl')
+        prof.name = 'Lod3_Profiles'
+        ws = pd.read_excel(db_path, sheet_name = 'Lod3_WaterState', index_col = idx_col, engine = 'openpyxl')
+        ws.name = 'Lod3_WaterState'
+        soil = pd.read_excel(db_path, sheet_name = 'Lod3_Soil', index_col = idx_col, engine = 'openpyxl')
+        soil.name = 'Lod3_Soil'
+        ESTM = pd.read_excel(db_path, sheet_name = 'Lod3_ESTM', index_col = idx_col, engine = 'openpyxl')
+        soil.name = 'Lod3_ESTM'
+        irr = pd.read_excel(db_path, sheet_name= 'Lod3_Irrigation', index_col = idx_col, engine = 'openpyxl')
+        irr.name = 'Lod3_Irrigation'
+
+        return Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr
 
     def read_suews_db(self):
 
         # set path to our read the docs
-
         db_path = self.plugin_dir + '/SUEWS_db.xlsx'  
         idx_col = 'ID'
         # Lod 1
@@ -1879,11 +2121,12 @@ class Urban_type_creator(object):
         
         return suews_Type, suews_veg, suews_nonveg, suews_water, suews_ref, suews_alb, suews_em, suews_OHM, suews_LAI, suews_st, suews_cnd, suews_LGP, suews_dr,suews_VG, suews_ANOHM, suews_BIOCO2, suews_MVCND, suews_por
 
-    def write_to_db(self,Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por):
+    def write_to_db(self,Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr):
 
             db_path = self.plugin_dir + '/database_copy.xlsx'  
             writer = pd.ExcelWriter(db_path)
 
+            reg.to_excel(writer, sheet_name = 'Lod0_Region')
             Type.to_excel(writer, sheet_name = 'Lod1_Types')
             veg.to_excel(writer, sheet_name = 'Lod2_Veg')
             nonveg.to_excel(writer, sheet_name = 'Lod2_NonVeg')
@@ -1902,13 +2145,18 @@ class Urban_type_creator(object):
             BIOCO2.to_excel(writer, sheet_name = 'Lod3_BiogenCO2')
             MVCND.to_excel(writer, sheet_name = 'Lod3_MaxVegetationConductance')
             por.to_excel(writer, sheet_name = 'Lod3_Porosity')
+            snow.to_excel(writer, sheet_name = 'Lod3_Snow')
+            AnEm.to_excel(writer, sheet_name = 'Lod3_AnthropogenicEmission')
+            prof.to_excel(writer, sheet_name = 'Lod3_Profiles')
+            ws.to_excel(writer, sheet_name = 'Lod3_WaterState')
+            soil.to_excel(writer, sheet_name = 'Lod3_Soil')
+            ESTM.to_excel(writer, sheet_name = 'Lod3_ESTM')
+            irr.to_excel(writer, sheet_name = 'Lod3_Irrigation')
 
             writer.save()
 
-
     def get_dicts(self,veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por):
         
-
         # FIX THESE DICTS!
         table_dict = {
             'Type' : 'Lod1_Types',
