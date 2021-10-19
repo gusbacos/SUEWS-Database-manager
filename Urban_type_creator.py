@@ -22,6 +22,7 @@
  ***************************************************************************/
 '''
 from os import stat_result, write
+from xml.etree.ElementTree import ProcessingInstruction
 from pandas.core.indexes import base
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon, QPixmap
@@ -34,6 +35,8 @@ from .tabs.urban_type_db_editor_tab import UrbanTypeDBEditor
 from .tabs.urban_elements_creator_tab import UrbanElementsCreator
 from .tabs.urban_ESTM import ESTM_creator
 from .tabs.urban_ref_manager import UrbanRefManager
+from .tabs.urban_profiles import ProfileCreator
+from .tabs.urban_irrigation import Irrigation_manager
 from .resources import *
 from pathlib import Path
 import geopandas as gpd
@@ -45,7 +48,6 @@ import codecs
 import urllib
 import time
 import re
-# import excelrd as xlrd # Possibly needed for python 3.2. perhaps not
 
 # Import the code for the dialog
 from .Urban_type_creator_dialog import Urban_type_creatorDialog
@@ -226,6 +228,14 @@ class Urban_type_creator(object):
         self.setup_ESTM_creator(estm_creator)
         self.dlg.tabWidget.addTab(estm_creator, 'ESTM_Creator')
 
+        profile_creator = ProfileCreator()
+        self.setup_profile_creator(profile_creator)
+        self.dlg.tabWidget.addTab(profile_creator, 'Profile Creator')
+
+        irrigation_manager = Irrigation_manager()
+        self.setup_irrigation_manager(irrigation_manager)
+        self.dlg.tabWidget.addTab(irrigation_manager, 'Irrigation Manager')
+
         ref_manager = UrbanRefManager()
         self.setup_ref_manager(ref_manager)
         self.dlg.tabWidget.addTab(ref_manager, 'Reference Manager')
@@ -324,8 +334,8 @@ class Urban_type_creator(object):
                     '\n\nPeriod: ' + str(selection['Period'].item()) + 
                     '\n\nDescription: ' + str(selection['Description'].item()) +
                     '\n\nAuthor: ' + str(selection['Author'].item()) 
-                    # '\n\nDate of Creation' + str(datetime.datetime.fromtimestamp(selection['ID'].item()).strftime('%Y-%m-%d %H:%M:%S'))
                     )
+
                 # Test if reference picture exists
                 try:
                     url = str(selection['Url'].item())
@@ -406,7 +416,7 @@ class Urban_type_creator(object):
 
             self.write_to_db(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
 
-            QMessageBox.information(None, 'Sucessful','Database Updated \nNew Entries have been added to SAY WHICH ONES HAS BEEN CHANGED?' )
+            QMessageBox.information(None, 'Sucessful','Database Updated \nNew Entries have been added [provide more rich message here]' )
 
 
         def start_progress():
@@ -757,8 +767,8 @@ class Urban_type_creator(object):
         
         dlg.comboBoxSurface.setCurrentIndex(-1)
         
-        dlg.textBrowserColor.setHidden(True)
-        dlg.textEditColor.setHidden(True)
+        # dlg.textBrowserColor.setDisabled(True)
+        # dlg.textEditColor.setHidden(True)
 
         def changed_surface():
             
@@ -794,8 +804,8 @@ class Urban_type_creator(object):
                     # Join type and origin to present for user
                     app_list.append((clr + ' ' + item + ', ' + origin))
 
-                dlg.textBrowserColor.setVisible(True)
-                dlg.textEditColor.setVisible(True)
+                dlg.textBrowserColor.setEnabled(True)
+                dlg.textEditColor.setEnabled(True)
             
             elif surface == 'Water':
                 item_list = water['Type'][water['Surface'] == surface].tolist()
@@ -805,8 +815,8 @@ class Urban_type_creator(object):
                     # Join type and origin to present for user
                     app_list.append((i + ', ' + j))
 
-                dlg.textBrowserColor.setHidden(True)
-                dlg.textEditColor.setHidden(True)
+                dlg.textBrowserColor.seDisabled(True)
+                dlg.textEditColor.setDisabled(True)
 
             else: 
                 item_list = veg['Type'][veg['Surface'] == surface].tolist()
@@ -816,8 +826,8 @@ class Urban_type_creator(object):
                     # Join type and origin to present for user
                     app_list.append((i + ', ' + j))
 
-                dlg.textBrowserColor.setHidden(True)
-                dlg.textEditColor.setHidden(True)
+                dlg.textBrowserColor.setDisabled(True)
+                dlg.textEditColor.setDisabled(True)
 
             dlg.comboBoxBaseElement.addItems(app_list)
             dlg.comboBoxBaseElement.setCurrentIndex(-1)
@@ -1008,7 +1018,6 @@ class Urban_type_creator(object):
                 dlg.pushButtonGen.setEnabled(True)
 
         def generate_element():
-            # self.write_to_db(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
             db_path = self.plugin_dir + '/database_copy.xlsx'  
 
             Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
@@ -1092,15 +1101,8 @@ class Urban_type_creator(object):
     # TODO CHANGE Numbers in combo and scrollboxes to 0 and drop description and origin 
 
     def setup_urban_db_type_editor(self, dlg):
-        
 
-        # Create the dialog with elements (after translation) and keep reference
-        # Only create GUI ONCE in callback, so that it will only load when the plugin is started
-        # if self.first_start == True:
-        #     self.first_start = False
-        #     self.dlg = urban_type_db_editorDialog()
-        
-        for i in range(0,11):
+        for i in range(0,15):
             Oc = eval('dlg.textBrowser_' + str(i))
             Oc.clear()
             Oc.setDisabled(True)
@@ -1109,16 +1111,13 @@ class Urban_type_creator(object):
             Nc.clear()
             Nc.setDisabled(True)
         
-        # dlg.comboBoxTableSelect.clear()
-        # dlg.comboBoxRef.clear()
-        
         Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
         table_dict,table_dict_ID,table_dict_pd,dict_str_var,dict_gen_type = self.get_dicts(veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
 
         rev_table_dict = dict((v, k) for k, v in table_dict.items())
         
         # Remove Conductance in some way
-        remove_list = ['Lod1_Types', 'References', 'Lod2_Veg', 'Lod2_NonVeg', 'Lod2_Water','Lod3_Conductance']
+        remove_list = ['Lod1_Types', 'References', 'Lod2_Veg', 'Lod2_NonVeg', 'Lod2_Water'] # FIX THIS
         
         for sheet in remove_list:
             del rev_table_dict[sheet]
@@ -1138,8 +1137,7 @@ class Urban_type_creator(object):
 
             # Clear ComboBoxes
             dlg.textBrowserDf.clear()
-            for i in range(0,11):
-                # Oc == Old Class
+            for i in range(0,15):
                 Oc = eval('dlg.textBrowser_' + str(i))
                 Oc.clear()
                 Oc.setDisabled(True)
@@ -1148,14 +1146,7 @@ class Urban_type_creator(object):
                 Nc.clear()
                 Nc.setDisabled(True)
 
-            try:
-                if dlg.checkBoxAdvanced.isChecked():  # FIX THIS!
-                    if 'Conductance' in [dlg.comboBoxTableSelect.itemText(i) for i in range(dlg.comboBoxTableSelect.count())]:
-                        pass
-                    else:
-                        dlg.comboBoxTableSelect.addItems(['Conductance'])
                     
-
                 table = table_dict_pd[str(table_name)]
                 col_list = list(table)
                 
@@ -1188,20 +1179,19 @@ class Urban_type_creator(object):
                     dlg.comboBoxSurface.addItems(['Paved', 'Building','Evergreen Tree', 'Decidous Tree', 'Grass', 'Bare Soil', 'Water'])
                 dlg.comboBoxSurface.setEnabled(True)
                 dlg.comboBoxSurface.setCurrentIndex(-1)
-
-                #self.dlg.textBrowserNewID.setText(str(' '.join(re.findall('[a-zA-Z]+', table.index[1])))+ str(len(table)+1))
                             
                 ref_show = ref['authoryear'].to_dict()
                 table['Reference'] = '' 
-                for i in range(len(table)):
-                    table['Reference'].iloc[i] = ref_show[table['Ref'].iloc[i]] 
-                
+                try:
+                    for i in range(len(table)):
+                        table['Reference'].iloc[i] = ref_show[table['Ref'].iloc[i]] 
+                except:
+                    pass                
                 text_table = table.drop(columns =['Surface','General Type', 'Ref']).reset_index()
     
                 dlg.textBrowserDf.setText(str(text_table.drop(columns='ID').to_html()))        
                 dlg.comboBoxSurface.setCurrentIndex(-1)
-            except:
-                pass
+
 
         dlg.comboBoxTableSelect.currentIndexChanged.connect(table_changed) 
         
@@ -1237,31 +1227,7 @@ class Urban_type_creator(object):
                 pass
     
         dlg.comboBoxRef.currentIndexChanged.connect(ref_changed)
-
-        # def check_reference():
-        #     dlg.pushButtonAddRef.setEnabled(True)
-        #     QMessageBox.information(None, 'Sucessful','Your reference is compatible. \n Press Add Refernce to add to your Local Database')
-
-        # def add_reference():
-        #     Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
-
-        #     dict_reclass = {
-        #         'ID' : 'Ref' + str(int(round(time.time()))),
-        #         'Author' : dlg.textEditRefAuthor.value(),
-        #         'Title' : dlg.textEditRefTitle.value(),
-        #         'Publication Year' : dlg.textEditRefYear.value(),
-        #         'Journal' : dlg.textEditRefJournal.value(),
-        #     }
-
-        #     new_edit_ref = pd.DataFrame(dict_reclass, index=[0]).set_index('ID')
-
-        #     ref = ref.append(new_edit_ref)
-            
-        #     self.write_to_db(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
-
-        #     QMessageBox.information(None, 'Sucessful','Reference Added')
-
-
+        
         def add_table():
 
             Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
@@ -1517,12 +1483,20 @@ class Urban_type_creator(object):
     #                                                                                               #
     #################################################################################################
 
-    # TODO CHANGE Numbers in combo and scrollboxes to 0 and drop description and origin 
-
     def setup_ESTM_creator(self, dlg):
 
-        Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por = self.read_db()
-        table_dict,table_dict_ID,table_dict_pd,dict_str_var,dict_gen_type= self.get_dicts(veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
+        db_path = self.plugin_dir + '/database_copy.xlsx'  
+        ref = pd.read_excel(db_path, sheet_name = 'References', index_col = 'ID', engine = 'openpyxl')
+        ESTM = pd.read_excel(db_path, sheet_name = 'Lod3_ESTM', index_col = 'ID', engine = 'openpyxl')
+        
+        item_list = ESTM['Description'].tolist()
+        origin = ESTM['Origin'].tolist()
+
+        app_list = []
+        for item, origin in zip(item_list, origin):
+                    app_list.append((item + ', ' + origin))
+        
+        ESTM['descOrigin'] = app_list
         
         for i in range(0,51):
             Tb = eval('dlg.textBrowser_' + str(i))
@@ -1530,10 +1504,28 @@ class Urban_type_creator(object):
             Le.clear()
             Le.setText(str(-999))
         
+        def surface_changed():
+            surface = dlg.comboBoxSurface.currentText()
+            dlg.comboBoxBaseESTM.clear()
+
+            ESTM_surf = ESTM['descOrigin'][ESTM['Surface'] == surface]
+        
+            dlg.comboBoxBaseESTM.addItems(ESTM_surf.tolist())
+
+        def base_ETSM_changed():
+            base_ESTM = dlg.comboBoxBaseESTM.currentText()
+            ESTM_sel = ESTM[ESTM['descOrigin'] == base_ESTM]
+
+            ESTM_sel_dict = ESTM_sel.squeeze().to_dict()
+
+            for i in range(0,51):
+                Tb = eval('dlg.textBrowser_' + str(i))
+                Le = eval('dlg.ESTMlineEdit' + str(i))
+                Le.clear()
+                Le.setText(str(ESTM_sel_dict[Tb.toPlainText()]))
+
+
         def show_references():
-            
-            db_path = self.plugin_dir + '/database_copy.xlsx'
-            ref = pd.read_excel(db_path, sheet_name= 'References', index_col=  'ID', engine= 'openpyxl')
             ref_list = []
             for i in range(len(ref)):
                 ref_list.append(str(ref['Author'].iloc[i]) + ' (' + str(ref['Publication Year'].iloc[i]) + ')')
@@ -1556,33 +1548,157 @@ class Urban_type_creator(object):
                 )
             except:
                 pass
-    
+
         dlg.comboBoxRef.currentIndexChanged.connect(ref_changed) 
+        dlg.comboBoxSurface.currentIndexChanged.connect(surface_changed)
+        dlg.comboBoxBaseESTM.currentIndexChanged.connect(base_ETSM_changed)
 
-        # def add_reference():
+    #################################################################################################
+    #                                                                                               #
+    #                                  Profile creator                                              #
+    #                                                                                               #
+    #################################################################################################
 
-        #     dict_reclass = {
-        #         'ID' : 'Ref' + str(int(round(time.time()))),
-        #         'Author' : dlg.textEditRefAuthor.value(),
-        #         'Title' : dlg.textEditRefTitle.value(),
-        #         'Publication Year' : dlg.textEditRefYear.value(),
-        #         'Journal' : dlg.textEditRefJournal.value(),
-        #     }
+    def setup_profile_creator(self,dlg):
 
-        #     new_edit_ref = pd.DataFrame(dict_reclass, index=[0]).set_index('ID')
+        db_path = self.plugin_dir + '/database_copy.xlsx'  
+        ref = pd.read_excel(db_path, sheet_name = 'References', index_col = 'ID', engine = 'openpyxl')
+        prof = pd.read_excel(db_path, sheet_name = 'Lod3_Profiles', index_col = 'ID', engine = 'openpyxl')
+        
+        item_list = prof['Description'].tolist()
+        origin = prof['Origin'].tolist()
 
-        #     db_path = self.plugin_dir + '/database_copy.xlsx'
-        #     ref = pd.read_excel(db_path, sheet_name= 'References', index_col=  'ID', engine= 'openpyxl')
+        app_list = []
+        for item, origin in zip(item_list, origin):
+                    app_list.append((str(item) + ', ' + origin))
+        
+        prof['descOrigin'] = app_list
+        
+        def prof_type_changed():
+            prof_type = dlg.comboBoxProfType.currentText()
+            dlg.comboBoxBaseProfile.clear()
 
-        #     ref = ref.append(new_edit_ref)
-            
-        #     self.write_to_db(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
+            prof_types = prof['descOrigin'][prof['ProfileType'] == prof_type]
+            dlg.comboBoxBaseProfile.addItems(prof_types.tolist())
+            dlg.comboBoxDay.setCurrentIndex(1)
 
-        #     QMessageBox.information(None, 'Sucessful','Reference Added')
+        def day_changed():
+            day = dlg.comboBoxDay.currentText()
+            prof_type = dlg.comboBoxProfType.currentText()
+            dlg.comboBoxBaseProfile.clear()
 
-        # dlg.pushButtonAddRef.clicked.connect(add_reference)
-        # dlg.pushButtonAddRef.clicked.connect(show_references) # Update only ref? and things related to that!
+            prof_types_d = prof[prof['ProfileType'] == prof_type]
+            prof_types_d = prof_types_d['descOrigin'][prof['Day'] == day]
 
+            dlg.comboBoxBaseProfile.addItems(prof_types_d.tolist())
+            dlg.comboBoxBaseProfile.setEnabled(True)
+
+        def base_prof_changed():
+            base_prof = dlg.comboBoxBaseProfile.currentText()
+            prof_sel = prof[prof['descOrigin'] == base_prof]
+            prof_sel.columns = prof_sel.columns.map(str)
+            prof_sel_dict = prof_sel.squeeze().to_dict()
+
+
+            for i in range(0,24):
+                Tb = eval('dlg.textBrowser_' + str(i))
+                Le = eval('dlg.lineEdit_' + str(i))
+                Le.clear()
+                Le.setText(str(prof_sel_dict[str(Tb.toPlainText())]))
+
+        def show_references():
+            ref_list = []
+            for i in range(len(ref)):
+                ref_list.append(str(ref['Author'].iloc[i]) + ' (' + str(ref['Publication Year'].iloc[i]) + ')')
+            ref['authoryear'] = ref_list
+            dlg.comboBoxRef.addItems(sorted(ref_list)) 
+            dlg.comboBoxRef.setCurrentIndex(-1)
+        
+        show_references()
+        
+        def ref_changed():
+            dlg.textBrowserRef.clear()
+
+            try:
+                ID = ref[ref['authoryear'] ==  dlg.comboBoxRef.currentText()].index.item()
+                dlg.textBrowserRef.setText(
+                    '<b>Author: ' +'</b>' + str(ref.loc[ID, 'Author']) + '<br><br><b>' +
+                    'Year: ' + '</b> '+ str(ref.loc[ID, 'Publication Year']) + '<br><br><b>' +
+                    'Title: ' + '</b> ' +  str(ref.loc[ID, 'Title']) + '<br><br><b>' +
+                    'Journal: ' + '</b>' + str(ref.loc[ID, 'Journal']) + '<br><br><b>'
+                )
+            except:
+                pass
+
+        dlg.comboBoxRef.currentIndexChanged.connect(ref_changed) 
+        dlg.comboBoxProfType.currentIndexChanged.connect(prof_type_changed)
+        dlg.comboBoxBaseProfile.currentIndexChanged.connect(base_prof_changed)
+        dlg.comboBoxDay.currentIndexChanged.connect(day_changed)
+
+
+    #################################################################################################
+    #                                                                                               #
+    #                                  Irrigation manager                                           #
+    #                                                                                               #
+    #################################################################################################
+
+    def setup_irrigation_manager(self, dlg):
+
+        db_path = self.plugin_dir + '/database_copy.xlsx'  
+        ref = pd.read_excel(db_path, sheet_name = 'References', index_col = 'ID', engine = 'openpyxl')
+        irr = pd.read_excel(db_path, sheet_name = 'Lod3_Irrigation', index_col = 'ID', engine = 'openpyxl')
+
+        item_list = irr['Description'].tolist()
+        origin = irr['Origin'].tolist()
+
+        app_list = []
+        for item, origin in zip(item_list, origin):
+                    app_list.append((item + ', ' + origin))
+        
+        irr['descOrigin'] = app_list
+        
+        dlg.comboBoxBaseIrr.addItems(irr['descOrigin'].tolist())
+        dlg.comboBoxBaseIrr.setCurrentIndex(-1)
+
+        def base_irr_changed():
+
+            base_irr = dlg.comboBoxBaseIrr.currentText()
+            irr_sel = irr[irr['descOrigin'] == base_irr]
+
+            irr_sel_dict = irr_sel.squeeze().to_dict()
+
+            for i in range(0,25):
+                Tb = eval('dlg.textBrowser_' + str(i))
+                Le = eval('dlg.IrrLineEdit_' + str(i))
+                Le.clear()
+                Le.setText(str(irr_sel_dict[Tb.toPlainText()]))
+
+
+        def show_references():
+            ref_list = []
+            for i in range(len(ref)):
+                ref_list.append(str(ref['Author'].iloc[i]) + ' (' + str(ref['Publication Year'].iloc[i]) + ')')
+            ref['authoryear'] = ref_list
+            dlg.comboBoxRef.addItems(sorted(ref_list)) 
+            dlg.comboBoxRef.setCurrentIndex(-1)
+        
+        show_references()
+        
+        def ref_changed():
+            dlg.textBrowserRef.clear()
+            try:
+                ID = ref[ref['authoryear'] ==  dlg.comboBoxRef.currentText()].index.item()
+                dlg.textBrowserRef.setText(
+                    '<b>Author: ' +'</b>' + str(ref.loc[ID, 'Author']) + '<br><br><b>' +
+                    'Year: ' + '</b> '+ str(ref.loc[ID, 'Publication Year']) + '<br><br><b>' +
+                    'Title: ' + '</b> ' +  str(ref.loc[ID, 'Title']) + '<br><br><b>' +
+                    'Journal: ' + '</b>' + str(ref.loc[ID, 'Journal']) + '<br><br><b>'
+                )
+            except:
+                pass
+
+        dlg.comboBoxRef.currentIndexChanged.connect(ref_changed) 
+        dlg.comboBoxBaseIrr.currentIndexChanged.connect(base_irr_changed)
 
 
     #################################################################################################
@@ -1662,6 +1778,8 @@ class Urban_type_creator(object):
             # self.write_to_db(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
 
             # QMessageBox.information(None, 'Sucessful','Reference Added')
+
+    
         
 
     #######################################################################################################################################
