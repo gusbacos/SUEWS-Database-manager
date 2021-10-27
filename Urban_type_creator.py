@@ -25,6 +25,7 @@ from os import stat_result, write
 from xml.etree.ElementTree import ProcessingInstruction
 from pandas.core.indexes import base
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
+# from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtGui import QIcon, QPixmap
 from qgis.PyQt.QtWidgets import QFileDialog, QAction, QMessageBox
 from qgis.core import QgsVectorLayer, QgsMapLayerProxyModel, QgsProject
@@ -211,10 +212,11 @@ class Urban_type_creator(object):
     def setup_tabs(self):
         self.dlg.tabWidget.clear()
 
-        Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr = self.read_db()
+        Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr = self.read_db('No')
+        table_dict, table_dict_ID, table_dict_pd, dict_gen_type = self.get_dicts(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr)
 
         urban_creator = UrbanTypeCreator()
-        self.setup_urban_type_creator(urban_creator)
+        self.setup_urban_type_creator(urban_creator, table_dict, Type, reg)
         self.dlg.tabWidget.addTab(urban_creator, 'Urban Type Classifier')
 
         urban_editor = UrbanTypeEditor()
@@ -222,11 +224,11 @@ class Urban_type_creator(object):
         self.dlg.tabWidget.addTab(urban_editor, 'Urban Type Editor')
 
         urban_elements_creator = UrbanElementsCreator()
-        self.setup_urban_elements_creator(urban_elements_creator,  veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
+        self.setup_urban_elements_creator(urban_elements_creator,  veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, table_dict_ID, table_dict_pd,)
         self.dlg.tabWidget.addTab(urban_elements_creator, 'Urban Elements Creator')
 
         urban_db_editor = UrbanTypeDBEditor()
-        self.setup_urban_db_type_editor(urban_db_editor, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por,  ws, soil)
+        self.setup_urban_db_type_editor(urban_db_editor, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por,  ws, soil, table_dict, table_dict_ID, table_dict_pd,dict_gen_type)
         self.dlg.tabWidget.addTab(urban_db_editor, 'SUEWS Table Editor')
 
         estm_creator = ESTM_creator()
@@ -250,11 +252,11 @@ class Urban_type_creator(object):
         self.dlg.tabWidget.addTab(snow_creator, 'Snow Creator')
 
         region_creator = RegionCreator()
-        self.setup_region_creator(region_creator, cnd, reg, snow, AnEm, prof, irr)
+        self.setup_region_creator(region_creator, cnd, reg, snow, AnEm, prof, irr, ref, table_dict_pd)
         self.dlg.tabWidget.addTab(region_creator, 'Region Creator')
 
         ref_manager = UrbanRefManager()
-        self.setup_ref_manager(ref_manager)
+        self.setup_ref_manager(ref_manager, ref)
         self.dlg.tabWidget.addTab(ref_manager, 'Reference Manager')
 
 
@@ -264,12 +266,12 @@ class Urban_type_creator(object):
     #                                                                                               #
     #################################################################################################
 
-    def setup_urban_type_creator(self, dlg):
+    def setup_urban_type_creator(self, dlg, table_dict, Type, reg):
         # Create the dialog with elements (after translation) and keep reference
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
-        if self.first_start == True:
-            self.first_start = False
-            self.dlg = UrbanTypeCreator()
+        
+        dlg.comboBoxRegion.addItems(reg['descOrigin'].tolist())
+        dlg.comboBoxRegion.setCurrentIndex(-1)
 
         def layer_changed():
                 layer = self.layerComboManagerPoint.currentLayer()
@@ -330,17 +332,9 @@ class Urban_type_creator(object):
 
             dlg.textOutput.clear()
             dlg.Qlabel.clear()
-
-            db_path = self.plugin_dir + '/database_copy.xlsx'
-            db = pd.read_excel(db_path, sheet_name= 'Lod1_Types', index_col=  'ID', engine= 'openpyxl')
-
-            type_list = []
-            for i in range(len(db)):
-                type_list.append(str(db['Type'].iloc[i]) + ', ' + str(db['Origin'].iloc[i]))
-            db['type_Origin'] = type_list
           
             urb_type = dlg.comboBoxType.currentText() 
-            selection = db.loc[db['type_Origin'] == urb_type]
+            selection = db.loc[db['typeOrigin'] == urb_type]
             
             try:
                 dlg.textBrowser.setText(
@@ -373,11 +367,10 @@ class Urban_type_creator(object):
             # To readthedocs? 
             webbrowser.open_new_tab(url)
 
-        def updateDB():
+        def updateDB(table_dict):
 
             Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr = self.read_db()
             suews_Type, suews_veg, suews_nonveg, suews_water, suews_ref, suews_alb, suews_em, suews_OHM, suews_LAI, suews_st, suews_cnd, suews_LGP, suews_dr,suews_VG, suews_ANOHM, suews_BIOCO2, suews_MVCND, suews_por = self.read_suews_db()
-            table_dict,table_dict_ID,table_dict_pd,dict_str_var, dict_gen_type = self.get_dicts(veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
             rev_table_dict = dict((v, k) for k, v in table_dict.items())
 
 
@@ -550,27 +543,11 @@ class Urban_type_creator(object):
     #################################################################################################
 
     def setup_urban_type_editor(self, dlg,Type, veg, nonveg, water):
-        # Create the dialog with elements (after translation) and keep reference
-        # Only create GUI ONCE in callback, so that it will only load when the plugin is started
-        # if self.first_start == True:
-        #     self.first_start = False
-        #     self.dlg = urban_type_editorDialog()
 
-        # Add available types to combobox
-        type_list = []
-        for i in range(len(Type)):
-            type_list.append(str(Type['Type'].iloc[i]) + ', ' + str(Type['Origin'].iloc[i]))
-        Type['type_origin'] = type_list
-
-        dlg.comboBoxTableSelect.addItems(sorted(type_list)) 
+        dlg.comboBoxTableSelect.addItems(sorted(Type['typeOrigin'])) 
         dlg.comboBoxTableSelect.setCurrentIndex(-1)
 
         def check_type():
-
-            db_path = self.plugin_dir + '/database_copy.xlsx'
-            idx_col = 'ID'
-
-            Type = pd.read_excel(db_path, sheet_name = 'Lod1_Types', index_col = idx_col, engine = 'openpyxl')
 
             # Name
             if dlg.textEditName.isNull():
@@ -594,7 +571,6 @@ class Urban_type_creator(object):
         def generate_type():
 
             Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr = self.read_db()
-            table_dict,table_dict_ID,table_dict_pd,dict_str_var, dict_gen_type = self.get_dicts(veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
 
             dict_reclass = {
                 'ID' : str('Type' + str(int(round(time.time())))),
@@ -613,7 +589,7 @@ class Urban_type_creator(object):
             for cbox, surf_table, label in zip(cbox_list, cbox_table_list, dict_label):
                 merge_list = []
                 for i in range(len(surf_table)):
-                    merge_list.append(str(surf_table['Type'].iloc[i]) + ', ' + str(surf_table['Origin'].iloc[i]))
+                    merge_list.append(str(surf_table['Description'].iloc[i]) + ', ' + str(surf_table['Origin'].iloc[i]))
                 surf_tablec = surf_table.copy()
                 surf_tablec['TypeYear'] = merge_list
                 
@@ -625,42 +601,38 @@ class Urban_type_creator(object):
 
         # Update rest of ComboBoxes
         def type_changed(): 
-            try:          
-                urb_type = dlg.comboBoxTableSelect.currentText()
-                TypeID =Type[Type['type_origin'] == urb_type].index.item()
-        
-                # for i in [dlg.comboBoxEvrType, dlg.comboBoxDecType, dlg.comboBoxGrassType,
-                # dlg.comboBoxRoofMtr, dlg.comboBoxWaterType, dlg.QgsFieldComboBox dlg.comboBoxBsoilType]:
-                #     i.clear()
-        
-                def add_to_combobox(cbox, sheet, surface):
-                    cbox.clear()
-                    item_list = sheet['Type'][sheet['Surface'] == surface].tolist()
-                    origin = sheet['Origin'][sheet['Surface'] == surface].tolist()
-                    
-                    merge_list = []
-                    for i, j in zip(item_list, origin):
-                        # Join type and origin to present for user
-                        merge_list.append((i + ', ' + j))
+            # try:          
+            urb_type = dlg.comboBoxTableSelect.currentText()
+            TypeID =Type[Type['typeOrigin'] == urb_type].index.item()
+    
+            def add_to_combobox(cbox, sheet, surface):
+                cbox.clear()
+                item_list = sheet['Description'][sheet['Surface'] == surface].tolist()
+                origin = sheet['Origin'][sheet['Surface'] == surface].tolist()
+                
+                merge_list = []
+                for i, j in zip(item_list, origin):
+                    # Join type and origin to present for user
+                    merge_list.append((i + ', ' + j))
 
-                    cbox.addItems(merge_list)
-                    # Set index according to selected base type
-                    try:
-                        indexer = sheet.loc[Type.loc[TypeID, surface],'Type']
-                        cbox.setCurrentIndex(item_list.index(indexer))
-                    except:
-                        pass
-          
-                add_to_combobox(dlg.comboBoxEvrType, veg, 'Evergreen Tree')
-                add_to_combobox(dlg.comboBoxDecType, veg, 'Decidous Tree')
-                add_to_combobox(dlg.comboBoxGrassType,veg, 'Grass')
-                add_to_combobox(dlg.comboBoxBuildingType, nonveg,  'Building')
-                add_to_combobox(dlg.comboBoxPavedType, nonveg, 'Paved')
-                add_to_combobox(dlg.comboBoxBsoilType, nonveg, 'Bare Soil')
-                add_to_combobox(dlg.comboBoxWaterType, water, 'Water')
+                cbox.addItems(merge_list)
+                # Set index according to selected base type
+                try:
+                    indexer = sheet.loc[Type['Description'].loc[TypeID, surface],'Type']
+                    cbox.setCurrentIndex(Type['typeOrigin'].index(indexer))
+                except:
+                    pass
+        
+            add_to_combobox(dlg.comboBoxEvrType, veg, 'Evergreen Tree')
+            add_to_combobox(dlg.comboBoxDecType, veg, 'Decidous Tree')
+            add_to_combobox(dlg.comboBoxGrassType,veg, 'Grass')
+            add_to_combobox(dlg.comboBoxBuildingType, nonveg,  'Building')
+            add_to_combobox(dlg.comboBoxPavedType, nonveg, 'Paved')
+            add_to_combobox(dlg.comboBoxBsoilType, nonveg, 'Bare Soil')
+            add_to_combobox(dlg.comboBoxWaterType, water, 'Water')
             
-            except:
-                pass
+            # except:
+            #     pass
            
         dlg.comboBoxTableSelect.currentIndexChanged.connect(type_changed)
         
@@ -763,100 +735,66 @@ class Urban_type_creator(object):
     #                                                                                               #
     #################################################################################################
 
-    def setup_urban_elements_creator(self, dlg, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por):
+    def setup_urban_elements_creator(self, dlg, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, table_dict_ID, table_dict_pd):
 
-        table_dict,table_dict_ID,table_dict_pd,dict_str_var,dict_gen_type = self.get_dicts(veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
-     
         rev_table_dict = dict((v, k) for k, v in table_dict_ID.items())
         
         dlg.comboBoxSurface.setCurrentIndex(-1)
 
         def changed_surface():
-            
-            for i in range(0,19):
+
+            # # Clear and enable ComboBox
+            dlg.comboBoxBase.clear()
+            dlg.comboBoxBase.setEnabled(True)
+
+            for i in range(0,20): 
                 Oc = eval('dlg.textBrowser_' + str(i))
                 Oc.clear()
                 Oc.setDisabled(True)
                 Nc = eval('dlg.comboBox_' + str(i))
-                Nc.setDisabled(True)
                 Nc.clear()
-                Tb = eval('dlg.textBrowserTab' + str(i))
-                Tb.setDisabled(True)
-                Tb.clear()
-                Cb = eval('dlg.checkBox' + str(i))
-                Cb.setChecked(False)
+                Nc.setDisabled(True)         
 
-            # Clear and enable ComboBox
-            dlg.comboBoxBaseElement.clear()
-            dlg.comboBoxBaseElement.setEnabled(True)
-            
             # Read what surface user has chosen
             surface = dlg.comboBoxSurface.currentText()
 
-
             # Select correct tab fom DB (Veg, NonVeg or Water)
             if surface == 'Paved' or surface == 'Building' or surface == 'Bare Soil':
-                item_list = nonveg['Type'][nonveg['Surface'] == surface].tolist()
-                origin = nonveg['Origin'][nonveg['Surface'] == surface].tolist()
-                clr = nonveg['Color'][nonveg['Surface'] == surface].tolist()
-
-                app_list = []
-                for item, origin, clr in zip(item_list, origin, clr):
-                    # Join type and origin to present for user
-                    app_list.append((clr + ' ' + item + ', ' + origin))
-
                 dlg.textBrowserColor.setEnabled(True)
                 dlg.textEditColor.setEnabled(True)
             
-            elif surface == 'Water':
-                item_list = water['Type'][water['Surface'] == surface].tolist()
-                origin = water['Origin'][water['Surface'] == surface].tolist()
-                app_list = []
-                for i, j in zip(item_list, origin):
-                    # Join type and origin to present for user
-                    app_list.append((i + ', ' + j))
-
-                dlg.textBrowserColor.setDisabled(True)
-                dlg.textEditColor.setDisabled(True)
-
             else: 
-                item_list = veg['Type'][veg['Surface'] == surface].tolist()
-                origin = veg['Origin'][veg['Surface'] == surface].tolist()
-                app_list = []
-                for i, j in zip(item_list, origin):
-                    # Join type and origin to present for user
-                    app_list.append((i + ', ' + j))
-
+        
                 dlg.textBrowserColor.setDisabled(True)
                 dlg.textEditColor.setDisabled(True)
-
-            dlg.comboBoxBaseElement.addItems(app_list)
-            dlg.comboBoxBaseElement.setCurrentIndex(-1)
 
             table = table_dict_pd[str(surface)]
+            dlg.comboBoxBase.addItems(table['descOrigin'][table['Surface'] == surface])
+            dlg.comboBoxBase.setCurrentIndex(-1)
+
             col_list = list(table)
 
-            remove_cols = ['ID', 'Surface', 'Color', 'Origin', 'Type']
+            remove_cols = ['ID', 'Surface', 'Color', 'Origin', 'Description', 'Ref', 'typeOrigin']
 
             if surface != 'Decidous Tree':
                 remove_cols.append('Por') # Exception for just Decidous tree in Veg
+
+            if surface != 'Water':
+                remove_cols.append('Ws')                        
 
             for col in remove_cols:
                 try:
                     col_list.remove(col)
                 except:
                     pass
-            # Clear ComboBoxes 
 
             for i in range(len(col_list)-1): 
                           
                 Oc = eval('dlg.textBrowser_' + str(i))
+                Oc.clear()
                 Oc.setEnabled(True)
-                # Tb = Text Browser with table
-                Tb = eval('dlg.textBrowserTab' + str(i))
-                Tb.setEnabled(True)
-                # Nc = Combobox with selectable table rows
                 Nc = eval('dlg.comboBox_' + str(i))
+                Nc.clear()
                 Nc.setEnabled(True)
                 
                 # Assign correct tab
@@ -871,8 +809,9 @@ class Urban_type_creator(object):
                 table = table_dict_pd[table_name_str]
                 table_surf = table[table['Surface'] == surface]
 
-                ref_show = ref['authoryear'].to_dict()
-                table_surf['Reference'] = '' 
+                ref_show = ref['authorYear'].to_dict()
+                table_surf['Reference'] = ''
+
                 for i in range(len(table_surf)):
                     table_surf['Reference'].iloc[i] = ref_show[table_surf['Ref'].iloc[i]] 
                 
@@ -884,7 +823,7 @@ class Urban_type_creator(object):
                     pass
 
                 table_sel = table_sel.drop(columns = ['ID'])
-                Tb.setText(str(table_sel.to_html(index=True))) 
+                # Tb.setText(str(table_sel.to_html(index=True))) 
 
                 Nc_fill_list = []
                 idx = 0
@@ -897,111 +836,60 @@ class Urban_type_creator(object):
 
         def base_element_changed():
             surface = dlg.comboBoxSurface.currentText()
-            surf_table = table_dict_pd[surface]
-            merge_list = []
-            if surface == 'Paved' or surface == 'Building' or surface == 'Bare Soil':
-                for i in range(len(table_dict_pd[surface])):
-                    merge_list.append(
-                        str(surf_table['Color'].iloc[i]) + 
-                        ' ' + 
-                        str(surf_table['Type'].iloc[i]) + 
-                        ', ' +
-                         str(surf_table['Origin'].iloc[i]))
-                lod_2 = nonveg
-            elif surface == 'Water':
-                for i in range(len(table_dict_pd[surface])):
-                    merge_list.append(
-                        str(surf_table['Type'].iloc[i]) +
-                         ', ' +
-                          str(surf_table['Origin'].iloc[i]))
-                lod_2 = water
-                
-            else:
-                for i in range(len(table_dict_pd[surface])):
-                    merge_list.append(
-                        str(surf_table['Type'].iloc[i]) +
-                         ', ' +
-                          str(surf_table['Origin'].iloc[i]))
-                lod_2 = veg
-                
-            surf_table['TypeOrigin'] = merge_list
-            item_list = surf_table[surf_table['Surface'] == surface]
-            base_element = dlg.comboBoxBaseElement.currentText()
+            base_element = dlg.comboBoxBase.currentText()
+
             try:
-                idx = item_list[item_list['TypeOrigin'] == base_element].index.item()
-                # base_element_ID = surf_table[surf_table['TypeOrigin'] == base_element].index.item()
-                #     # Set index according to selected base type
-                # indexer = surf_table.loc[Type.loc[base_element_ID, surface],'Type']
-                col_list = list(surf_table)
-                remove_cols = ['ID', 'Surface', 'Color', 'Origin', 'Type']
-                if surface != 'Decidous Tree':
-                    remove_cols.append('Por') # Exception for just Decidous tree in Veg
+                for i in range(0,21):
+                    Cb = eval('dlg.comboBox_' + str(i))
+                    Tb = eval('dlg.textBrowser_' + str(i))
 
-                for col in remove_cols:
-                    try:
-                        col_list.remove(col)
-                    except:
-                        pass
+                    if len(Tb.toPlainText()) <1:
+                        break
+                    else: 
+                        surface_table = table_dict_pd[surface]
+                        surface_sel = surface_table[surface_table['Surface'] == surface]
+                        surf_row = surface_sel[surface_sel['descOrigin'] == base_element]    
+                        surf_row_dict = surf_row.squeeze().to_dict()
 
-                for i in range(len(col_list)): 
-                    Nc = eval('dlg.comboBox_' + str(i))
-                    Nc.setEnabled(True)
-                    
-                    # Assign correct tab
-                    table_name_str = rev_table_dict[col_list[i]]
-                    
-                    table = table_dict_pd[table_name_str]
-                    table_surf = table[table['Surface'] == surface]
-
-                    origin = table['Origin'][table['Surface'] == surface].tolist()
-                    merge_list = []
-                    if surface == 'Paved' or surface == 'Building' or surface == 'Bare Soil':
-                        for i in range(len(table_dict_pd[surface])):
-                            merge_list.append(
-                                str(table_surf['Color'].iloc[i]) + 
-                                ' ' + 
-                                str(table_surf['Type'].iloc[i]) + 
-                                ', ' +
-                                str(table_surf['Origin'].iloc[i]))
-                        else:
-                            for i in range(len(table_dict_pd[surface])):
-                                merge_list.append(
-                                    str(table_surf['Type'].iloc[i]) +
-                                    ', ' +
-                                    str(table_surf['Origin'].iloc[i]))
-                            lod_2 = veg
-                    # # Set index according to selected base type
-
-                    a  = lod_2.loc[idx, table_dict_ID[table_name_str]]
-                    indexer = table_surf.loc[a, 'Description']
-                    #indexer = table.loc[lod_2.loc[idx, table_dict_ID[table_name_str]],'Descripiton']
-                    Nc.setCurrentIndex(item_list.index(str(indexer)))
-
-
-
+                        cbox_table_indexer = table_dict_ID[Tb.toPlainText()]
+                        
+                        surf_row_id = surf_row_dict[cbox_table_indexer]
+                        cbox_table = table_dict_pd[Tb.toPlainText()]
+                        cbox_table_id = cbox_table.loc[surf_row_id, 'descOrigin']                    
+                        Cb.setCurrentIndex(cbox_table['descOrigin'][cbox_table['Surface'] == surface].tolist().index(cbox_table_id))
             except:
-                pass
-            
+                print('Error in' , Tb.toPlainText())
 
         def print_table(idx):
             surface = dlg.comboBoxSurface.currentText()
+            try:
+                Tb_name = eval('dlg.textBrowser_' + str(idx))
+                table_var = Tb_name.toPlainText()
             
-            if surface == 'Paved' or surface == 'Building' or surface == 'Bare Soil':
-                table_name = nonveg
-            elif surface == 'Water':
-                table_name = water # CHANGE TO WATER
-            else:
-                table_name = veg
+                table = table_dict_pd[table_var]
+                dlg.textBrowserTableLable.setText(table_var)
+                dlg.textBrowserTableLable.setAlignment(QtCore.Qt.AlignCenter)
 
-            table = table_name[table_name['Surface'] == surface]
+                try:
+                    table = table[table['Surface'] == surface].drop(columns = ['General Type', 'Surface', 'descOrigin']).reset_index()
+                except:
+                    table = table[table['Surface'] == surface].drop(columns = ['General Type', 'Surface']).reset_index()
+                Tb = eval('dlg.textBrowserEl')
+                Tb.clear()
 
-            table_indexer = eval('dlg.textBrowserTab' + str(idx)) 
-            table_indexer.clear()
-            vars()['dlg.textBrowserTab' + str(idx)] = table_indexer
-            
-            table_id = eval('dlg.comboBox_' + str(idx))
-            vars()['dlg.comboBox_' + str(idx)] = table_id
-            table_id = table_id.currentText()
+                ref_show = ref['authorYear'].to_dict()
+                table['Reference'] = '' 
+                try:
+                    for i in range(len(table)):
+                        table['Reference'].iloc[i] = ref_show[table['Ref'].iloc[i]] 
+                except:
+                    pass 
+                
+                Tb.setText(str(table.drop(columns = ['ID', 'Ref']).to_html(index=True)))
+                Tb.setLineWrapMode(0)
+            except:
+                pass
+
 
         def check_element(): # Add more checkers
 
@@ -1019,10 +907,7 @@ class Urban_type_creator(object):
                 dlg.pushButtonGen.setEnabled(True)
 
         def generate_element():
-            db_path = self.plugin_dir + '/database_copy.xlsx'  
-
             Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr = self.read_db()
-            table_dict,table_dict_ID,table_dict_pd,dict_str_var,dict_gen_type = self.get_dicts(veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
 
             # Nonveg or veg or water?
             surface = dlg.comboBoxSurface.currentText()
@@ -1030,7 +915,15 @@ class Urban_type_creator(object):
             table = table_dict_pd[surface]
 
             col_list = list(table)
-            remove_cols = ['ID', 'Surface', 'Color', 'Origin', 'Type']
+            remove_cols = ['ID', 'Description', 'Surface', 'Color', 'Origin', 'Type', 'descOrigin']
+
+            
+            if surface != 'Water':
+                remove_cols.append('Ws')
+            
+            if surface == 'Grass' or surface == 'Evergreen Tree':
+                remove_cols.append('Por')
+
             for col in remove_cols:
                 try:
                     col_list.remove(col)
@@ -1040,53 +933,90 @@ class Urban_type_creator(object):
             dict_reclass = {
                 'ID' : str(table_dict_ID[surface] + str(int(round(time.time())))),
                 'Surface' : surface,
-                'Origin' : str(dlg.textEditLoc.toPlainText()),
-                'Type' : str(dlg.textEditType.toPlainText()),
+                'Origin' : str(dlg.textEditOrig.value()),
+                'Description' : str(dlg.textEditDesc.value()),
                 #'Author' : str(dlg.textEditAutor.toPlainText())
             }
-
-            for i in range(len(col_list)-1):
+            print(col_list)
+            for i in range(len(col_list)):
                 Oc = eval('dlg.textBrowser_' + str(i))
                 oldField = Oc.toPlainText()
                 Nc = eval('dlg.comboBox_' + str(i))
                 sel_att = Nc.currentText() 
+                print(oldField)
 
                 table = table_dict_pd[oldField]
-
-                descOrigin_list = []
-                for i in range(len(table)):
-                    descOrigin_list.append(str(table['Description'].iloc[i]) + ', ' + str(table['Origin'].iloc[i]))
-
-                idx_table= table.copy()
-                idx_table['descOrigin'] = descOrigin_list
-
                 sel_att = sel_att.split(': ')[1] # Remove number added for interpretation in GUI
 
-                newField = idx_table.loc[idx_table['descOrigin'] == sel_att].index.item()
+                table['descOrigin'] = (table['Description'] + ', ' + table['Origin'])               
+
+                newField = table.loc[table['descOrigin'] == sel_att].index.item()
                 dict_reclass[table_dict_ID[oldField]] = newField
-                idx_table.drop(columns = 'descOrigin')
+                table.drop(columns = 'descOrigin')
             
             df_new_edit = pd.DataFrame(dict_reclass, index = [0]).set_index('ID')
+
             # Add new line to correct tab veg, nonveg or water
-            if surface == 'Paved' or surface == 'Building' or surface == 'Bare Soil':
-                df_new_edit['Color'] = dlg.textEditColor.toPlainText()
+            if surface == 'Paved': 
+                df_new_edit['Color'] = dlg.textEditColor.value()
+                df_new_edit['Ws'] = 'Ws4'
+                nonveg = nonveg.append(df_new_edit)
+            elif surface == 'Building':
+                df_new_edit['Color'] = dlg.textEditColor.value()
+                df_new_edit['Ws'] = 'Ws3'
+                print(df_new_edit)
+                nonveg = nonveg.append(df_new_edit)
+            elif surface == 'Bare Soil':
+                df_new_edit['Color'] = dlg.textEditColor.value()
+                df_new_edit['Ws'] = 'ws5'
                 nonveg = nonveg.append(df_new_edit)
             elif surface == 'Water':
                 water = water.append(df_new_edit)
-            else:
+            elif surface == 'Grass':
+                df_new_edit['Ws'] = 'Ws8'
+                veg = veg.append(df_new_edit)
+            elif surface == 'Decidous Tree':
+                df_new_edit['Ws'] = 'Ws7'
+                df_new_edit['Por'] = 'Por11'
+                veg = veg.append(df_new_edit)
+            elif surface == 'Evergreen Tree':
+                df_new_edit['Ws'] = 'Ws6'
+                df_new_edit['Por'] = 'Por10'
                 veg = veg.append(df_new_edit)
             
-            # Write to db
-            self.write_to_db(TType, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr)
+            # # Write to db
+            self.write_to_db(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr)
 
             QMessageBox.information(None, 'Sucessful','Element Added')
-
+        
         dlg.pushButtonCheck.clicked.connect(check_element)
         dlg.pushButtonGen.clicked.connect(generate_element)
-        dlg.comboBoxBaseElement.currentIndexChanged.connect(base_element_changed)
-        dlg.pushButtonGen.clicked.connect(self.reset_surface_editor)
+        dlg.comboBoxBase.currentIndexChanged.connect(base_element_changed)
+        dlg.pushButtonGen.clicked.connect(self.reset_element_editor)
+        dlg.comboBox_1.currentIndexChanged.connect(lambda: print_table(1))
+        dlg.comboBox_2.currentIndexChanged.connect(lambda: print_table(2))
+        dlg.comboBox_3.currentIndexChanged.connect(lambda: print_table(3))
+        dlg.comboBox_4.currentIndexChanged.connect(lambda: print_table(4))
+        dlg.comboBox_5.currentIndexChanged.connect(lambda: print_table(5))
+        dlg.comboBox_6.currentIndexChanged.connect(lambda: print_table(6))
+        dlg.comboBox_7.currentIndexChanged.connect(lambda: print_table(7))
+        dlg.comboBox_8.currentIndexChanged.connect(lambda: print_table(8))
+        dlg.comboBox_9.currentIndexChanged.connect(lambda: print_table(9))
+        dlg.comboBox_10.currentIndexChanged.connect(lambda: print_table(10))
+        dlg.comboBox_11.currentIndexChanged.connect(lambda: print_table(11))
+        dlg.comboBox_12.currentIndexChanged.connect(lambda: print_table(12))
+        dlg.comboBox_13.currentIndexChanged.connect(lambda: print_table(13))
+        dlg.comboBox_14.currentIndexChanged.connect(lambda: print_table(14))
+        dlg.comboBox_15.currentIndexChanged.connect(lambda: print_table(15))
+        dlg.comboBox_16.currentIndexChanged.connect(lambda: print_table(16))
+        dlg.comboBox_17.currentIndexChanged.connect(lambda: print_table(17))
+        dlg.comboBox_18.currentIndexChanged.connect(lambda: print_table(18))
+        dlg.comboBox_19.currentIndexChanged.connect(lambda: print_table(19))
+        dlg.comboBox_20.currentIndexChanged.connect(lambda: print_table(20))
+        dlg.comboBox_0.currentIndexChanged.connect(lambda: print_table(0))
 
-    def reset_surface_editor(self):
+
+    def reset_element_editor(self):
         self.setup_tabs()
         self.dlg.tabWidget.setCurrentIndex(2)
 
@@ -1101,23 +1031,14 @@ class Urban_type_creator(object):
 
     # TODO CHANGE Numbers in combo and scrollboxes to 0 and drop description and origin 
 
-    def setup_urban_db_type_editor(self, dlg, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por,  ws, soil):
-
-        for i in range(0,15):
-            Oc = eval('dlg.textBrowser_' + str(i))
-            Oc.clear()
-            Oc.setDisabled(True)
-
-            Nc = eval('dlg.textEdit_Edit_' + str(i))
-            Nc.clear()
-            Nc.setDisabled(True)
+    def setup_urban_db_type_editor(self, dlg, vveg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por,  ws, soil, table_dict, table_dict_ID, table_dict_pd,dict_gen_type):
         
-        # Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr = self.read_db()
-        table_dict,table_dict_ID,table_dict_pd,dict_str_var,dict_gen_type = self.get_dicts(veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
-
+        dlg.comboBoxRef.addItems(sorted(ref['authorYear'])) 
+        dlg.comboBoxRef.setCurrentIndex(-1)
+        
+        
         rev_table_dict = dict((v, k) for k, v in table_dict.items())
         
-        # Remove Conductance in some way
         remove_list = ['Lod1_Types', 'References', 'Lod2_Veg', 'Lod2_NonVeg', 'Lod2_Water'] # FIX THIS
         
         for sheet in remove_list:
@@ -1125,13 +1046,6 @@ class Urban_type_creator(object):
 
         dlg.comboBoxTableSelect.addItems(sorted((list(rev_table_dict.values()))))
         dlg.comboBoxTableSelect.setCurrentIndex(-1)
-        
-        ref_list = []
-        for i in range(len(ref)):
-            ref_list.append(str(ref['Author'].iloc[i]) + ' (' + str(ref['Publication Year'].iloc[i]) + ')')
-        ref['authoryear'] = ref_list
-        dlg.comboBoxRef.addItems(sorted(ref_list)) 
-        dlg.comboBoxRef.setCurrentIndex(-1)
         
         def table_changed():
             table_name = dlg.comboBoxTableSelect.currentText()
@@ -1151,7 +1065,7 @@ class Urban_type_creator(object):
                 table = table_dict_pd[str(table_name)]
                 col_list = list(table)
                 
-                columns_to_remove = ['General Type', 'Surface', 'Description','Origin','Ref', 'Reference']
+                columns_to_remove = ['General Type', 'Surface', 'Description','Origin','Ref', 'Reference', 'descOrigin']
 
                 for remove in columns_to_remove:
                     try:
@@ -1167,7 +1081,6 @@ class Urban_type_creator(object):
 
                     Nc = eval('dlg.textEdit_Edit_' + str(idx))
                     Nc.setEnabled(True)
-
                 
                 if table_name == 'Leaf Area Index' or table_name == 'Leaf Growth Power' or table_name == 'Max Vegetation Conductance' or table_name == 'Vegetation Growth' or table_name == 'Biogen CO2':
                     dlg.comboBoxSurface.clear()
@@ -1178,19 +1091,30 @@ class Urban_type_creator(object):
                 elif table_name == 'Albedo' or table_name == 'ANOHM' or table_name == 'OHM' or table_name == 'Emissivity':
                     dlg.comboBoxSurface.clear()
                     dlg.comboBoxSurface.addItems(['Paved', 'Building','Evergreen Tree', 'Decidous Tree', 'Grass', 'Bare Soil', 'Water', 'Snow'])
+                elif table_name == 'Soil':
+                    dlg.comboBoxSurface.clear()
+                    dlg.comboBoxSurface.addItems(['No Surface'])
+                    dlg.comboBoxSurface.setCurrentIndex(1)
+
+                elif table_name == 'Water State':
+                    dlg.comboBoxSurface.clear()
+                    dlg.comboBoxSurface.addItems(['Water'])
+                    dlg.comboBoxSurface.setCurrentIndex(1)
                 else:
                     dlg.comboBoxSurface.clear()
                     dlg.comboBoxSurface.addItems(['Paved', 'Building','Evergreen Tree', 'Decidous Tree', 'Grass', 'Bare Soil', 'Water'])
+
+                
                 dlg.comboBoxSurface.setEnabled(True)
                 dlg.comboBoxSurface.setCurrentIndex(-1)
                             
-                ref_show = ref['authoryear'].to_dict()
-                table['Reference'] = '' 
-                try:
-                    for i in range(len(table)):
-                        table['Reference'].iloc[i] = ref_show[table['Ref'].iloc[i]] 
-                except:
-                    pass                
+                # ref_show = ref['authorYear'].to_dict()
+                # table['Reference'] = '' 
+                # try:
+                #     for i in range(len(table)):
+                #         table['Reference'].iloc[i] = ref_show[table['Ref'].iloc[i]] 
+                # except:
+                #     pass                
                 text_table = table.drop(columns =['Surface','General Type', 'Ref']).reset_index()
     
                 dlg.textBrowserDf.setText(str(text_table.drop(columns='ID').to_html()))        
@@ -1205,7 +1129,7 @@ class Urban_type_creator(object):
             table = table_dict_pd[str(table_name)]
             table_surf = table[table['Surface'] == surface]
 
-            ref_show = ref['authoryear'].to_dict()
+            ref_show = ref['authorYear'].to_dict()
             table_surf['Reference'] = '' 
             for i in range(len(table_surf)):
                 table_surf['Reference'].iloc[i] = ref_show[table_surf['Ref'].iloc[i]] 
@@ -1220,7 +1144,7 @@ class Urban_type_creator(object):
             dlg.textBrowserRef.clear()
 
             try:
-                ID = ref[ref['authoryear'] ==  dlg.comboBoxRef.currentText()].index.item()
+                ID = ref[ref['authorYear'] ==  dlg.comboBoxRef.currentText()].index.item()
                 dlg.textBrowserRef.setText(
                     '<b>Author: ' +'</b>' + str(ref.loc[ID, 'Author']) + '<br><br><b>' +
                     'Year: ' + '</b> '+ str(ref.loc[ID, 'Publication Year']) + '<br><br><b>' +
@@ -1236,13 +1160,11 @@ class Urban_type_creator(object):
 
             Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr = self.read_db()
 
-            table_dict,table_dict_ID,table_dict_pd,dict_str_var,dict_gen_type= self.get_dicts(veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
-
             table = table_dict_pd[str(dlg.comboBoxTableSelect.currentText())]
 
             col_list = list(table)
             
-            columns_to_remove = ['General Type', 'Surface', 'Description','Origin','Ref','Reference']
+            columns_to_remove = ['General Type', 'Surface', 'Description','Origin','Ref','Reference', 'descOrigin']
 
             for remove in columns_to_remove:
                 try:
@@ -1252,15 +1174,25 @@ class Urban_type_creator(object):
 
             len_list = len(col_list)
 
-            dict_reclass = {
-                'ID' : str(table_dict_ID[str(dlg.comboBoxTableSelect.currentText())] + str(int(round(time.time())))),
-                'General Type' : dict_gen_type[dlg.comboBoxSurface.currentText()],
-                'Surface' : dlg.comboBoxSurface.currentText(), 
-                'Description' : dlg.textEditDesc.value(),
-                'Origin' : dlg.textEditOrig.value()
-            }
+            if table.name == 'Lod3_Soil':
+                dict_reclass = {
+                    'ID' : str(table_dict_ID[str(dlg.comboBoxTableSelect.currentText())] + str(int(round(time.time())))),
+                    'General Type' : 'NonVeg',
+                    'Surface' : 'NaN', 
+                    'Description' : dlg.textEditDesc.value(),
+                    'Origin' : dlg.textEditOrig.value()
+                }
+            else:
+                dict_reclass = {
+                    'ID' : str(table_dict_ID[str(dlg.comboBoxTableSelect.currentText())] + str(int(round(time.time())))),
+                    'General Type' : dict_gen_type[dlg.comboBoxSurface.currentText()],
+                    'Surface' : dlg.comboBoxSurface.currentText(), 
+                    'Description' : dlg.textEditDesc.value(),
+                    'Origin' : dlg.textEditOrig.value()
+                }
         
             for idx in range(len_list):
+                print(idx)
                 # Left side
                 Oc = eval('dlg.textBrowser_' + str(idx))
                 oldField = Oc.toPlainText()
@@ -1271,13 +1203,15 @@ class Urban_type_creator(object):
                 vars()['dlg.textEdit_Edit_' + str(idx)] = Nc
                 dict_reclass[oldField] =  [newField]
 
-            
-            dict_reclass['Ref'] = ref[ref['authoryear'] ==  dlg.comboBoxRef.currentText()].index.item() 
+            ref['authorYear'] = (ref['Author'] + ' ,(' + ref['Publication Year'].apply(str) + ')')
+
+            dict_reclass['Ref'] = ref[ref['authorYear'] ==  dlg.comboBoxRef.currentText()].index.item() 
             
             df_new_edit = pd.DataFrame(dict_reclass).set_index('ID')
 
+
             # IF Party to write to correct sheet in .xlsx
-            
+    
             var = dlg.comboBoxTableSelect.currentText()
 
             if var == 'Emissivity':
@@ -1304,11 +1238,17 @@ class Urban_type_creator(object):
                 MVCND = MVCND.append(df_new_edit)
             elif var == 'Porosity':
                 por = por.append(df_new_edit)
+            elif var == 'Water Storage':
+                st = st.append(df_new_edit)
+            elif var == 'Water State':
+                ws = ws.append(df_new_edit)
+            elif var == 'Soil':
+                soil = soil.append(df_new_edit)
             else:
                 print('Error!')
             
             # Write to db
-            self.write_to_db(TType, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr)
+            self.write_to_db(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr)
 
             QMessageBox.information(None, 'Sucessful','Edit Added')
     
@@ -1334,7 +1274,7 @@ class Urban_type_creator(object):
 
             col_list = list(table)
             
-            columns_to_remove = ['General Type', 'Surface', 'Description','Origin','Ref','Reference']
+            columns_to_remove = ['General Type', 'Surface', 'Description','Origin','Ref','Reference', 'descOrigin']
 
             for remove in columns_to_remove:
                 try:
@@ -1378,7 +1318,7 @@ class Urban_type_creator(object):
                     dict_reclass[oldField] =  [newField]
                     col_list.append(Oc.toPlainText())
 
-                    dict_reclass['Ref'] = ref[ref['authoryear'] ==  dlg.comboBoxRef.currentText()].index.item() 
+                    dict_reclass['Ref'] = ref[ref['authorYear'] ==  dlg.comboBoxRef.currentText()].index.item() 
                     df_new_edit = pd.DataFrame(dict_reclass)
                     col_list.append('Ref')
 
@@ -1466,10 +1406,10 @@ class Urban_type_creator(object):
             #     LGP = LGP.append(df_new_edit)
             # elif var == 'Drainage':
             #     dr = dr.append(df_new_edit)
-        # dlg.checkBoxAdvanced.stateChanged.connect(advanced_editing)
+
         dlg.pushButtonCheck.clicked.connect(checker)
         dlg.pushButtonGen.clicked.connect(add_table)
-        dlg.pushButtonGen.clicked.connect(self.reset_DB_editor)
+        # dlg.pushButtonGen.clicked.connect(self.reset_DB_editor)
         # dlg.pushButtonCheckRef.clicked.connect(check_reference)
         # dlg.pushButtonAddRef.clicked.connect(add_reference)
         # dlg.pushButtonAddRef.clicked.connect(self.reset_DB_editor)
@@ -1483,14 +1423,8 @@ class Urban_type_creator(object):
 
     def setup_ESTM_creator(self, dlg, ref, ESTM):
 
-        item_list = ESTM['Description'].tolist()
-        origin = ESTM['Origin'].tolist()
-
-        app_list = []
-        for item, origin in zip(item_list, origin):
-                    app_list.append((item + ', ' + origin))
-        
-        ESTM['descOrigin'] = app_list
+        dlg.comboBoxRef.addItems(sorted(ref['authorYear'])) 
+        dlg.comboBoxRef.setCurrentIndex(-1)
         
         for i in range(0,51):
             Tb = eval('dlg.textBrowser_' + str(i))
@@ -1517,23 +1451,12 @@ class Urban_type_creator(object):
                 Le = eval('dlg.ESTMlineEdit' + str(i))
                 Le.clear()
                 Le.setText(str(ESTM_sel_dict[Tb.toPlainText()]))
-
-
-        def show_references():
-            ref_list = []
-            for i in range(len(ref)):
-                ref_list.append(str(ref['Author'].iloc[i]) + ' (' + str(ref['Publication Year'].iloc[i]) + ')')
-            ref['authoryear'] = ref_list
-            dlg.comboBoxRef.addItems(sorted(ref_list)) 
-            dlg.comboBoxRef.setCurrentIndex(-1)
-        
-        show_references()
         
         def ref_changed():
             dlg.textBrowserRef.clear()
 
             try:
-                ID = ref[ref['authoryear'] ==  dlg.comboBoxRef.currentText()].index.item()
+                ID = ref[ref['authorYear'] ==  dlg.comboBoxRef.currentText()].index.item()
                 dlg.textBrowserRef.setText(
                     '<b>Author: ' +'</b>' + str(ref.loc[ID, 'Author']) + '<br><br><b>' +
                     'Year: ' + '</b> '+ str(ref.loc[ID, 'Publication Year']) + '<br><br><b>' +
@@ -1546,6 +1469,8 @@ class Urban_type_creator(object):
         dlg.comboBoxRef.currentIndexChanged.connect(ref_changed) 
         dlg.comboBoxSurface.currentIndexChanged.connect(surface_changed)
         dlg.comboBoxBaseESTM.currentIndexChanged.connect(base_ETSM_changed)
+        dlg.pushButtonToRefManager.clicked.connect(self.to_ref)
+
 
     #################################################################################################
     #                                                                                               #
@@ -1555,24 +1480,14 @@ class Urban_type_creator(object):
 
     def setup_profile_creator(self, dlg, ref, prof):
 
-        # db_path = self.plugin_dir + '/database_copy.xlsx'  
-        # ref = pd.read_excel(db_path, sheet_name = 'References', index_col = 'ID', engine = 'openpyxl')
-        # prof = pd.read_excel(db_path, sheet_name = 'Lod3_Profiles', index_col = 'ID', engine = 'openpyxl')
-        
-        item_list = prof['Description'].tolist()
-        origin = prof['Origin'].tolist()
-
-        app_list = []
-        for item, origin in zip(item_list, origin):
-                    app_list.append((str(item) + ', ' + origin))
-        
-        prof['descOrigin'] = app_list
+        dlg.comboBoxRef.addItems(sorted(ref['authorYear'])) 
+        dlg.comboBoxRef.setCurrentIndex(-1)
         
         def prof_type_changed():
             prof_type = dlg.comboBoxProfType.currentText()
             dlg.comboBoxBaseProfile.clear()
 
-            prof_types = prof['descOrigin'][prof['ProfileType'] == prof_type]
+            prof_types = prof['descOrigin'][prof['Profile Type'] == prof_type]
             dlg.comboBoxBaseProfile.addItems(prof_types.tolist())
             dlg.comboBoxDay.setCurrentIndex(1)
 
@@ -1581,7 +1496,7 @@ class Urban_type_creator(object):
             prof_type = dlg.comboBoxProfType.currentText()
             dlg.comboBoxBaseProfile.clear()
 
-            prof_types_d = prof[prof['ProfileType'] == prof_type]
+            prof_types_d = prof[prof['Profile Type'] == prof_type]
             prof_types_d = prof_types_d['descOrigin'][prof['Day'] == day]
 
             dlg.comboBoxBaseProfile.addItems(prof_types_d.tolist())
@@ -1600,21 +1515,11 @@ class Urban_type_creator(object):
                 Le.clear()
                 Le.setText(str(prof_sel_dict[str(Tb.toPlainText())]))
 
-        def show_references():
-            ref_list = []
-            for i in range(len(ref)):
-                ref_list.append(str(ref['Author'].iloc[i]) + ' (' + str(ref['Publication Year'].iloc[i]) + ')')
-            ref['authoryear'] = ref_list
-            dlg.comboBoxRef.addItems(sorted(ref_list)) 
-            dlg.comboBoxRef.setCurrentIndex(-1)
-        
-        show_references()
-        
         def ref_changed():
             dlg.textBrowserRef.clear()
 
             try:
-                ID = ref[ref['authoryear'] ==  dlg.comboBoxRef.currentText()].index.item()
+                ID = ref[ref['authorYear'] ==  dlg.comboBoxRef.currentText()].index.item()
                 dlg.textBrowserRef.setText(
                     '<b>Author: ' +'</b>' + str(ref.loc[ID, 'Author']) + '<br><br><b>' +
                     'Year: ' + '</b> '+ str(ref.loc[ID, 'Publication Year']) + '<br><br><b>' +
@@ -1628,6 +1533,8 @@ class Urban_type_creator(object):
         dlg.comboBoxProfType.currentIndexChanged.connect(prof_type_changed)
         dlg.comboBoxBaseProfile.currentIndexChanged.connect(base_prof_changed)
         dlg.comboBoxDay.currentIndexChanged.connect(day_changed)
+        dlg.pushButtonToRefManager.clicked.connect(self.to_ref)
+
 
     #################################################################################################
     #                                                                                               #
@@ -1637,29 +1544,16 @@ class Urban_type_creator(object):
 
     def setup_anthropogenic_emission_manager(self, dlg, ref, AnEm, prof):
 
-        idx = 0
-        for table in [AnEm, prof]:
-            app_list = []
-            item_list = table['Description'].tolist()
-            origin = table['Origin'].tolist()
-            if idx == 1: 
-                day = table['Day'].tolist()
-                for item, wday, origin in zip(item_list, day, origin):
-                    app_list.append((item + ', ' + wday + ', ' + origin))
-            else:
-                for item, origin in zip(item_list, origin):
-                        app_list.append((item + ', ' + origin))
-        
-            table['descOrigin'] = app_list
-            idx = +1
-        
+    
         dlg.comboBoxBaseAnEm.addItems(AnEm['descOrigin'].tolist())
         dlg.comboBoxBaseAnEm.setCurrentIndex(-1)
+        dlg.comboBoxRef.addItems(sorted(ref['authorYear'])) 
+        dlg.comboBoxRef.setCurrentIndex(-1)
 
         for i in range(0,8):
             Cb = eval('dlg.comboBoxAnEm_' + str(i))
             Cb.clear()
-            Cb.addItems((prof['descOrigin'][prof['ProfileType'] == 'Anthropogenic heat flux']).tolist())
+            Cb.addItems((prof['descOrigin'][prof['Profile Type'] == 'Anthropogenic heat flux']).tolist())
             Cb.setCurrentIndex(-1)
 
         def base_AnEm_changed():
@@ -1668,7 +1562,7 @@ class Urban_type_creator(object):
             AnEm_sel = AnEm[AnEm['descOrigin'] == base_irr]
 
             AnEm_sel_dict = AnEm_sel.squeeze().to_dict()
-            prof_sel = (prof[prof['ProfileType'] == 'Anthropogenic heat flux']).index.tolist()
+            prof_sel = (prof[prof['Profile Type'] == 'Anthropogenic heat flux']).index.tolist()
             
             for i in range(0,30):
                 Tb = eval('dlg.textBrowser_' + str(i))
@@ -1681,25 +1575,12 @@ class Urban_type_creator(object):
                 CbT = eval('dlg.textBrowserCb_' + str(i))
                 prof_id = AnEm_sel_dict[CbT.toPlainText()]
                 Cb.setCurrentIndex(prof_sel.index(prof_id))
-                
-
-
-
-        def show_references():
-            ref_list = []
-            for i in range(len(ref)):
-                ref_list.append(str(ref['Author'].iloc[i]) + ' (' + str(ref['Publication Year'].iloc[i]) + ')')
-            ref['authoryear'] = ref_list
-            dlg.comboBoxRef.addItems(sorted(ref_list)) 
-            dlg.comboBoxRef.setCurrentIndex(-1)
-        
-        show_references()
         
         def ref_changed():
             dlg.textBrowserRef.clear()
 
             try:
-                ID = ref[ref['authoryear'] ==  dlg.comboBoxRef.currentText()].index.item()
+                ID = ref[ref['authorYear'] ==  dlg.comboBoxRef.currentText()].index.item()
                 dlg.textBrowserRef.setText(
                     '<b>Author: ' +'</b>' + str(ref.loc[ID, 'Author']) + '<br><br><b>' +
                     'Year: ' + '</b> '+ str(ref.loc[ID, 'Publication Year']) + '<br><br><b>' +
@@ -1719,18 +1600,11 @@ class Urban_type_creator(object):
     #################################################################################################
 
     def setup_irrigation_manager(self, dlg, ref, irr):
-
-        item_list = irr['Description'].tolist()
-        origin = irr['Origin'].tolist()
-
-        app_list = []
-        for item, origin in zip(item_list, origin):
-                    app_list.append((item + ', ' + origin))
-        
-        irr['descOrigin'] = app_list
         
         dlg.comboBoxBaseIrr.addItems(irr['descOrigin'].tolist())
         dlg.comboBoxBaseIrr.setCurrentIndex(-1)
+        dlg.comboBoxRef.addItems(sorted(ref['authorYear'])) 
+        dlg.comboBoxRef.setCurrentIndex(-1)
 
         def base_irr_changed():
 
@@ -1744,22 +1618,11 @@ class Urban_type_creator(object):
                 Le = eval('dlg.IrrLineEdit_' + str(i))
                 Le.clear()
                 Le.setText(str(irr_sel_dict[Tb.toPlainText()]))
-
-
-        def show_references():
-            ref_list = []
-            for i in range(len(ref)):
-                ref_list.append(str(ref['Author'].iloc[i]) + ' (' + str(ref['Publication Year'].iloc[i]) + ')')
-            ref['authoryear'] = ref_list
-            dlg.comboBoxRef.addItems(sorted(ref_list)) 
-            dlg.comboBoxRef.setCurrentIndex(-1)
-        
-        show_references()
         
         def ref_changed():
             dlg.textBrowserRef.clear()
             try:
-                ID = ref[ref['authoryear'] ==  dlg.comboBoxRef.currentText()].index.item()
+                ID = ref[ref['authorYear'] ==  dlg.comboBoxRef.currentText()].index.item()
                 dlg.textBrowserRef.setText(
                     '<b>Author: ' +'</b>' + str(ref.loc[ID, 'Author']) + '<br><br><b>' +
                     'Year: ' + '</b> '+ str(ref.loc[ID, 'Publication Year']) + '<br><br><b>' +
@@ -1781,19 +1644,10 @@ class Urban_type_creator(object):
     
     def setup_snow_creator(self, dlg, ref, alb, em, OHM, ANOHM, snow, ESTM, ):
 
-
-        for table in [snow, ESTM, OHM, ANOHM, alb, em]:
-            app_list = []
-            item_list = table['Description'].tolist()
-            origin = table['Origin'].tolist()
-   
-            for item, origin in zip(item_list, origin):
-                    app_list.append((item + ', ' + origin))
-    
-            table['descOrigin'] = app_list
-        
         dlg.comboBoxBase.addItems(snow['descOrigin'].tolist())
         dlg.comboBoxBase.setCurrentIndex(-1)
+        dlg.comboBoxRef.addItems(sorted(ref['authorYear'])) 
+        dlg.comboBoxRef.setCurrentIndex(-1)
 
         cbox_dict = {
             'Alb' : alb[alb['General Type'] == 'Snow'],
@@ -1835,21 +1689,10 @@ class Urban_type_creator(object):
                 list_indexcer = snow_sel_dict[CbT.toPlainText()]
                 Cb.setCurrentIndex(cbox_list.index(list_indexcer))
 
-
-        def show_references():
-            ref_list = []
-            for i in range(len(ref)):
-                ref_list.append(str(ref['Author'].iloc[i]) + ' (' + str(ref['Publication Year'].iloc[i]) + ')')
-            ref['authoryear'] = ref_list
-            dlg.comboBoxRef.addItems(sorted(ref_list)) 
-            dlg.comboBoxRef.setCurrentIndex(-1)
-        
-        show_references()
-        
         def ref_changed():
             dlg.textBrowserRef.clear()
             try:
-                ID = ref[ref['authoryear'] ==  dlg.comboBoxRef.currentText()].index.item()
+                ID = ref[ref['authorYear'] ==  dlg.comboBoxRef.currentText()].index.item()
                 dlg.textBrowserRef.setText(
                     '<b>Author: ' +'</b>' + str(ref.loc[ID, 'Author']) + '<br><br><b>' +
                     'Year: ' + '</b> '+ str(ref.loc[ID, 'Publication Year']) + '<br><br><b>' +
@@ -1907,7 +1750,22 @@ class Urban_type_creator(object):
     #                                                                                               #
     #################################################################################################
 
-    def setup_ref_manager(self, dlg):
+    def setup_ref_manager(self, dlg, ref):
+        dlg.comboBoxRef.addItems(sorted(ref['authorYear'])) 
+        dlg.comboBoxRef.setCurrentIndex(-1)
+
+        def ref_changed():
+            dlg.textBrowserRef.clear()
+            try:
+                ID = ref[ref['authorYear'] ==  dlg.comboBoxRef.currentText()].index.item()
+                dlg.textBrowserRef.setText(
+                    '<b>Author: ' +'</b>' + str(ref.loc[ID, 'Author']) + '<br><br><b>' +
+                    'Year: ' + '</b> '+ str(ref.loc[ID, 'Publication Year']) + '<br><br><b>' +
+                    'Title: ' + '</b> ' +  str(ref.loc[ID, 'Title']) + '<br><br><b>' +
+                    'Journal: ' + '</b>' + str(ref.loc[ID, 'Journal']) + '<br><br><b>'
+                )
+            except:
+                pass
         
         def check_reference():
 
@@ -1956,24 +1814,10 @@ class Urban_type_creator(object):
             self.write_to_db(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr)
   
         dlg.pushButtonCheck.clicked.connect(check_reference)
-        dlg.pushButtonAddRef.clicked.connect(add_reference)
+        dlg.pushButtonAddRef.clicked.connect(add_reference)            
+        dlg.comboBoxRef.currentIndexChanged.connect(ref_changed)
         dlg.pushButtonAddRef.clicked.connect(self.reset_ref_manager)
 
-            # dict_reclass = {
-            #     'ID' : 'Ref' + str(int(round(time.time()))),
-            #     # 'Author' : dlg.textEditRefAuthor.value(),
-            #     'Title' : dlg.textEditTitle.value(),
-            #     'Publication Year' : dlg.textEditYear.value(),
-            #     'Journal' : dlg.textEditJournal.value(),
-            # }
-
-            # new_edit_ref = pd.DataFrame(dict_reclass, index=[0]).set_index('ID')
-
-            # ref = ref.append(new_edit_ref)
-            
-            # self.write_to_db(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por)
-
-            # QMessageBox.information(None, 'Sucessful','Reference Added')
  
     #################################################################################################
     #                                                                                               #
@@ -1982,57 +1826,23 @@ class Urban_type_creator(object):
     #################################################################################################
     
     
-    def setup_region_creator(self, dlg, cnd, reg, snow, AnEm, prof, irr):
-
-        # db_path = self.plugin_dir + '/database_copy.xlsx'
-        # reg = pd.read_excel(db_path, sheet_name = 'Lod0_Region', index_col = 'ID', engine = 'openpyxl')  
-        # prof = pd.read_excel(db_path, sheet_name = 'Lod3_Profiles', index_col = 'ID', engine = 'openpyxl')
-        # AnEm = pd.read_excel(db_path, sheet_name = 'Lod3_AnthropogenicEmission', index_col= 'ID', engine= 'openpyxl')
-        # snow = pd.read_excel(db_path, sheet_name = 'Lod3_Snow', index_col = 'ID', engine = 'openpyxl')
-        # irr = pd.read_excel(db_path, sheet_name = 'Lod3_Irrigation', index_col = 'ID', engine = 'openpyxl')
-        # cond = pd.read_excel(db_path, sheet_name = 'Lod3_Conductance', index_col = 'ID', engine = 'openpyxl')
-
-        idx = 0
-        for table in [AnEm, prof, snow, irr, cnd, reg]:
-
-            app_list = []
-
-            if idx == 1: 
-                item_list = table['Description'].tolist()
-                origin = table['Origin'].tolist()
-                day = table['Day'].tolist()
-                for item, wday, origin in zip(item_list, day, origin):
-                    app_list.append((item + ', ' + wday + ', ' + origin))
-            elif idx == 5: 
-                region = table['Region'].tolist()
-                country = table['Country'].tolist()
-                city = table['City'].tolist()
-                for rg, cn, ct in zip(region, country, city):
-                    app_list.append((rg + ', ' + cn + ', ' + ct))
-            else:
-                item_list = table['Description'].tolist()
-                origin = table['Origin'].tolist()
-                for item, origin in zip(item_list, origin):
-                        app_list.append((item + ', ' + origin))
-        
-            table['descOrigin'] = app_list
-            idx = idx+1
+    def setup_region_creator(self, dlg, cnd, reg, snow, AnEm, prof, irr, ref, table_dict_pd):
 
         dlg.comboBoxBaseRegion.addItems(reg['descOrigin'].tolist())
         
         cbox_dict = {
-            'TrafficRate_WD' : prof[prof['ProfileType'] == 'Traffic'],
-            'TrafficRate_WE' : prof[prof['ProfileType'] == 'Traffic'],
+            'TrafficRate_WD' : prof[prof['Profile Type'] == 'Traffic'],
+            'TrafficRate_WE' : prof[prof['Profile Type'] == 'Traffic'],
             'CondCode' : cnd,
             'SnowCode' : snow,
-            'SnowClearingProfWD' : prof[prof['ProfileType'] == 'Snow removal'],
-            'SnowClearingProfWE' : prof[prof['ProfileType'] == 'Snow removal'],
+            'SnowClearingProfWD' : prof[prof['Profile Type'] == 'Snow removal'],
+            'SnowClearingProfWE' : prof[prof['Profile Type'] == 'Snow removal'],
             'AnthropogenicCode' : AnEm,
             'IrrigationCode' : irr,
-            'WaterUseProfManuWD' : prof[prof['ProfileType'] == 'Water use (manual)'],
-            'WaterUseProfManuWE' : prof[prof['ProfileType'] == 'Water use (manual)'],
-            'WaterUseProfAutoWD' : prof[prof['ProfileType'] == 'Water use (automatic)'],
-            'WaterUseProfAutoWE': prof[prof['ProfileType'] == 'Water use (automatic)']
+            'WaterUseProfManuWD' : prof[prof['Profile Type'] == 'Water use (manual)'],
+            'WaterUseProfManuWE' : prof[prof['Profile Type'] == 'Water use (manual)'],
+            'WaterUseProfAutoWD' : prof[prof['Profile Type'] == 'Water use (automatic)'],
+            'WaterUseProfAutoWE': prof[prof['Profile Type'] == 'Water use (automatic)']
             }
 
         for i in range(0, 17): 
@@ -2063,10 +1873,35 @@ class Urban_type_creator(object):
                     var_identifier = table.loc[var_id, 'descOrigin']
                     Cb.setCurrentIndex(table['descOrigin'].tolist().index(var_identifier))
 
-        def add_region(Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr):
+
+        def print_table(idx):
+
+            try:
+                Tb_name = eval('dlg.textBrowser_' + str(idx), {'dlg': dlg})
+                table_var = Tb_name.toPlainText()
+            
+                table = cbox_dict[table_var]
+                dlg.textBrowserTableLable.setText(table_var)
+                dlg.textBrowserTableLable.setAlignment(QtCore.Qt.AlignCenter)
+
+                try:
+                    table = table.drop(columns = ['General Type', 'Surface', 'descOrigin']).reset_index()
+                except:
+                    table = table.drop(columns = ['General Type','Profile Type', 'descOrigin']).reset_index()
+                
+                Tb = eval('dlg.textBrowserEl')
+                Tb.clear()
+                Tb.setText(str(table.to_html(index=True)))
+                Tb.setLineWrapMode(0)
+            except:
+                pass
+
+
+        def add_region():
+            print('Arr REgiodn')
             # db_path = self.plugin_dir + '/database_copy.xlsx'
             # reg = pd.read_excel(db_path, sheet_name = 'Lod0_Region', index_col = 'ID', engine = 'openpyxl')  
-            # Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr = self.read_db()
+            Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr = self.read_db()
 
             dict_reclass = {
                 'ID' : ('Reg' + str(int(round(time.time())))),
@@ -2099,13 +1934,30 @@ class Urban_type_creator(object):
 
         dlg.pushButtonCheck.clicked.connect(add_region)
         dlg.comboBoxBaseRegion.currentIndexChanged.connect(base_region_changed)
+        dlg.comboBox_1.currentIndexChanged.connect(lambda: print_table(1))
+        dlg.comboBox_2.currentIndexChanged.connect(lambda: print_table(2))
+        dlg.comboBox_3.currentIndexChanged.connect(lambda: print_table(3))
+        dlg.comboBox_4.currentIndexChanged.connect(lambda: print_table(4))
+        dlg.comboBox_5.currentIndexChanged.connect(lambda: print_table(5))
+        dlg.comboBox_6.currentIndexChanged.connect(lambda: print_table(6))
+        dlg.comboBox_7.currentIndexChanged.connect(lambda: print_table(7))
+        dlg.comboBox_8.currentIndexChanged.connect(lambda: print_table(8))
+        dlg.comboBox_9.currentIndexChanged.connect(lambda: print_table(9))
+        dlg.comboBox_10.currentIndexChanged.connect(lambda: print_table(10))
+        dlg.comboBox_11.currentIndexChanged.connect(lambda: print_table(11))
+        dlg.comboBox_12.currentIndexChanged.connect(lambda: print_table(12))
+        dlg.comboBox_13.currentIndexChanged.connect(lambda: print_table(13))
+        dlg.comboBox_14.currentIndexChanged.connect(lambda: print_table(14))
+        dlg.comboBox_15.currentIndexChanged.connect(lambda: print_table(15))
+        dlg.comboBox_16.currentIndexChanged.connect(lambda: print_table(16))
+        dlg.comboBox_0.currentIndexChanged.connect(lambda: print_table(0))
 
     #######################################################################################################################################
     #######################################################################################################################################
     #######################################################################################################################################
     #######################################################################################################################################
 
-    def read_db(self):
+    def read_db(self, add_to_db = False):
         db_path = self.plugin_dir + '/database_copy.xlsx'  
         idx_col = 'ID'
         # Lod 0
@@ -2162,9 +2014,25 @@ class Urban_type_creator(object):
         soil = pd.read_excel(db_path, sheet_name = 'Lod3_Soil', index_col = idx_col, engine = 'openpyxl')
         soil.name = 'Lod3_Soil'
         ESTM = pd.read_excel(db_path, sheet_name = 'Lod3_ESTM', index_col = idx_col, engine = 'openpyxl')
-        soil.name = 'Lod3_ESTM'
+        ESTM.name = 'Lod3_ESTM'
         irr = pd.read_excel(db_path, sheet_name= 'Lod3_Irrigation', index_col = idx_col, engine = 'openpyxl')
         irr.name = 'Lod3_Irrigation'
+
+        if add_to_db == 'No':
+            for table in [Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr]:
+                
+                if table.name == 'Lod2_NonVeg':
+                    table['descOrigin'] = (table['Color'] +  ', ' + table['Description'] + ', '+  table['Origin'])
+                elif table.name == 'References':
+                    table['authorYear'] = (table['Author'] + ' ,(' + table['Publication Year'].apply(str) + ')')
+                elif table.name == 'Lod1_Types':
+                    table['typeOrigin'] = (table['Type'] + ', '+  table['Origin'])
+                elif table.name == 'Lod0_Region':
+                        table['descOrigin'] = (table['Region'] + ', '+  table['Country'] + ', '+  table['City'])
+                elif table.name == 'Lod3_Profiles':
+                    table['descOrigin'] = (table['Profile Type'] + ', '+  table['Origin'])
+                else:
+                    table['descOrigin'] = (table['Description'] + ', '+  table['Origin'])
 
         return Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr
 
@@ -2212,10 +2080,11 @@ class Urban_type_creator(object):
         suews_por = pd.read_excel(db_path, sheet_name = 'Lod3_Porosity', index_col = idx_col, engine = 'openpyxl')
         suews_por.name = 'Lod3_Porosity'
         
+        
         return suews_Type, suews_veg, suews_nonveg, suews_water, suews_ref, suews_alb, suews_em, suews_OHM, suews_LAI, suews_st, suews_cnd, suews_LGP, suews_dr,suews_VG, suews_ANOHM, suews_BIOCO2, suews_MVCND, suews_por
 
     def write_to_db(self,Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr):
-
+    
         db_path = self.plugin_dir + '/database_copy.xlsx'  
         writer = pd.ExcelWriter(db_path)
 
@@ -2248,7 +2117,7 @@ class Urban_type_creator(object):
 
         writer.save()
 
-    def get_dicts(self,veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por):
+    def get_dicts(self, Type, veg, nonveg, water, ref, alb, em, OHM, LAI, st, cnd, LGP, dr, VG, ANOHM, BIOCO2, MVCND, por, reg, snow, AnEm, prof, ws, soil, ESTM, irr):
         
         # FIX THESE DICTS!
         table_dict = {
@@ -2259,6 +2128,10 @@ class Urban_type_creator(object):
             'Water' : 'Lod2_Water',
             'Emissivity': 'Lod3_Emissivity',
             'OHM': 'Lod3_OHM',
+            'OHM Summer Wet': 'Lod3_OHM' ,	
+            'OHM Summer Dry': 'Lod3_OHM',
+            'OHM Winter Wet': 'Lod3_OHM',
+            'OHM Winter Dry': 'Lod3_OHM',
             'Albedo': 'Lod3_Albedo',
             'Leaf Area Index': 'Lod3_LAI',
             'Water Storage': 'Lod3_Storage',
@@ -2269,7 +2142,9 @@ class Urban_type_creator(object):
             'ANOHM' : 'Lod3_ANOHM',
             'Biogen CO2' : 'Lod3_BiogenCO2',
             'Max Vegetation Conductance' : 'Lod3_MaxVegetationConductance',
-            'Porosity' : 'Lod3_Porosity'
+            'Porosity' : 'Lod3_Porosity',
+            'Water State' : 'Lod3_WaterState',
+            'Soil' : 'Lod3_Soil'
         }
             
         table_dict_ID = {
@@ -2287,8 +2162,10 @@ class Urban_type_creator(object):
             'OHM Winter Dry': 'OHMWinterDry',
             'Vegetation Growth' : 'VG',
             'ANOHM' : 'ANOHM',
-            'BIOCO2' : 'BIOCO2',
+            'Biogen CO2' : 'BIOGEN',
             'Max Vegetation Conductance' : 'MVCND',
+            'ESTM' : 'ESTM', 
+            'Water State' : 'Ws',
             'Porosity' : 'Por',
             'Evergreen Tree' : 'Veg',
             'Decidous Tree' : 'Veg',
@@ -2296,7 +2173,8 @@ class Urban_type_creator(object):
             'Building' : 'NonVeg',
             'Paved' : 'NonVeg',
             'Bare Soil': 'Bsoil',
-            'Water' : 'Water'}
+            'Water' : 'Water',
+            'Soil' : 'Soil'}
 
         table_dict_pd = {
             'Emissivity': em,
@@ -2322,20 +2200,23 @@ class Urban_type_creator(object):
             'Building' : nonveg,
             'Paved' : nonveg,
             'Bare Soil' : nonveg,
-            'Water' : water
+            'Water' : water, 
+            'ESTM' : ESTM,
+            'Water State' : ws,
+            'Soil' : soil
             }
 
-        dict_str_var = {
-            'Em': em,
-            'OHM': OHM,
-            'Alb': alb,
-            'LAI': LAI,
-            'St': st,
-            'Cnd': cnd,
-            'LGP': LGP,
-            'Dr': dr
+        # dict_str_var = {
+        #     'Em': em,
+        #     'OHM': OHM,
+        #     'Alb': alb,
+        #     'LAI': LAI,
+        #     'St': st,
+        #     'Cnd': cnd,
+        #     'LGP': LGP,
+        #     'Dr': dr
             
-            }
+        #     }
         
         dict_gen_type = {
             'Paved' : 'NonVeg',
@@ -2347,7 +2228,7 @@ class Urban_type_creator(object):
             'Water' : 'Water',           
         }
         
-        return table_dict,table_dict_ID,table_dict_pd,dict_str_var, dict_gen_type
+        return table_dict, table_dict_ID, table_dict_pd, dict_gen_type
 
     def to_ref(self):
         self.dlg.tabWidget.setCurrentIndex(10)

@@ -27,7 +27,7 @@ from qgis.PyQt import uic
 from qgis.PyQt.QtWidgets import QWidget, QDialog
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
-    os.path.dirname(__file__), 'urban_elements_creator_tab.ui'))
+    os.path.dirname(__file__), 'urban_element_editor_mkII_tab.ui'))
 
 
 class UrbanElementsCreator(QDialog, FORM_CLASS):
